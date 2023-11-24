@@ -3,49 +3,42 @@ import { UserService } from './user.service';
 import { User } from '@prisma/client';
 import { CreateUserInput } from './dto/create-user.input';
 import { UserType } from './types/user.types';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UseGuards } from '@nestjs/common';
 import { UpdateUserInput } from './dto/update-user.input';
 
 @Resolver()
 export class UserResolver {
   constructor(private userService: UserService) {}
 
+  @Query((returns) => UserType)
+  @UseGuards(GqlAuthGuard)
+  async getUser(@Args('id') id: number): Promise<User | null> {
+    return this.userService.findUserById(id);
+  }
+
   @Mutation((returns) => UserType)
   async createUser(
     @Args('createUserData') createUserData: CreateUserInput,
   ): Promise<User> {
-    try {
-      const user = await this.userService.createUser(createUserData);
-      return user;
-    } catch (error) {
-      throw new Error('Error creating user: ' + error.message);
-    }
-  }
-
-  @Query((returns) => UserType, { nullable: true })
-  async findUser(@Args('userId') userId: number): Promise<User | null> {
-    try {
-      const user = await this.userService.findUser(userId);
-      return user;
-    } catch (error) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    return this.userService.createUser(createUserData);
   }
 
   @Mutation((returns) => UserType)
+  @UseGuards(GqlAuthGuard)
   async updateUser(
+    @Args('id') id: number,
     @Args('updateUserData') updateUserData: UpdateUserInput,
+    @CurrentUser() user: User,
   ): Promise<User> {
-    try {
-      const user = await this.userService.updateUser({
-        data: updateUserData,
-        userId: updateUserData.id,
-      });
-      return user;
-    } catch (error) {
-      throw new NotFoundException(
-        `User with ID ${updateUserData.id} not found`,
-      );
-    }
+    return this.userService.updateUser(id, updateUserData);
+  }
+
+  @Mutation((returns) => UserType)
+  @UseGuards(GqlAuthGuard)
+  async deleteUser(
+    @Args('id') id: number,
+    @CurrentUser() user: User,
+  ): Promise<User> {
+    return this.userService.deleteUser(id);
   }
 }
