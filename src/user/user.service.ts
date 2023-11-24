@@ -7,53 +7,11 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        ...data,
-        password: hashedPassword,
-      },
-    });
-    return user;
-  }
+  async createUser(data: Prisma.UserCreateInput): Promise<User> {}
 
-  async findUser(userId: number): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+  async findUserById(id: number): Promise<User | null> {}
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+  async updateUser(id: number, data: Prisma.UserUpdateInput): Promise<User> {}
 
-    return user;
-  }
-
-  async updateUser(params: {
-    userId: number;
-    data: Prisma.UserUpdateInput;
-  }): Promise<User> {
-    const { userId, data } = params;
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    return this.prisma.user.update({
-      where: { id: userId },
-      data,
-    });
-  }
-  async deleteUser(userId: number): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found.`);
-    }
-
-    return this.prisma.user.delete({ where: { id: userId } });
-  }
+  async deleteUser(id: number): Promise<User> {}
 }
