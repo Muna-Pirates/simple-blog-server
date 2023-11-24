@@ -29,6 +29,7 @@ export class UserService {
 
     return user;
   }
+
   async updateUser(params: {
     userId: number;
     data: Prisma.UserUpdateInput;
