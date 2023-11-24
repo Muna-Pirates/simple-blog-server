@@ -39,7 +39,7 @@ export class UserResolver {
     try {
       const user = await this.userService.updateUser({
         data: updateUserData,
-        userId: 1,
+        userId: updateUserData.id,
       });
       return user;
     } catch (error) {
