@@ -45,14 +45,11 @@ export class PostService {
   async updatePostWithAuthorization(
     postId: number,
     updateData: UpdatePostInput,
-    currentUser: User,
+    user: { id: number; roleId: number },
   ): Promise<Post> {
     const post = await this.findOneById(postId);
 
-    if (
-      post.authorId !== currentUser.id &&
-      currentUser.roleId !== RoleType.ADMIN
-    ) {
+    if (post.authorId !== user.id && user.roleId !== RoleType.ADMIN) {
       throw new Error('Unauthorized to update this post');
     }
 
@@ -62,7 +59,10 @@ export class PostService {
     });
   }
 
-  async deletePostWithAuthorization(postId: number, user: User): Promise<Post> {
+  async deletePostWithAuthorization(
+    postId: number,
+    user: { id: number; roleId: number },
+  ): Promise<Post> {
     const post = await this.findOneById(postId);
 
     if (post.authorId !== user.id && user.roleId !== RoleType.ADMIN) {

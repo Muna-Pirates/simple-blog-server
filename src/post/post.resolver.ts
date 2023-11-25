@@ -6,11 +6,11 @@ import { PostService } from './post.service';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { CreatePostInput } from './dto/create-post.input';
-import { PostSearchInput } from './dto/post-search.input';
 import { UpdatePostInput } from './dto/update-post.input';
 import { Post } from './types/post.types';
 import { User } from 'src/user/types/user.types';
 import { Prisma } from '@prisma/client';
+import { PostSearchInput } from './dto/post-search.input';
 
 @Resolver(() => Post)
 export class PostResolver {
@@ -45,11 +45,10 @@ export class PostResolver {
     @Args('updateData') updateData: UpdatePostInput,
     @CurrentUser() currentUser: User,
   ) {
-    return this.postService.updatePostWithAuthorization(
-      postId,
-      updateData,
-      currentUser,
-    );
+    return this.postService.updatePostWithAuthorization(postId, updateData, {
+      id: currentUser.id,
+      roleId: currentUser.roleId,
+    });
   }
 
   @Mutation(() => Post)
@@ -58,7 +57,10 @@ export class PostResolver {
     @Args('postId', { type: () => Int }) postId: number,
     @CurrentUser() user: User,
   ) {
-    return this.postService.deletePostWithAuthorization(postId, user);
+    return this.postService.deletePostWithAuthorization(postId, {
+      id: user.id,
+      roleId: user.roleId,
+    });
   }
 
   async searchPosts(@Args('searchCriteria') searchCriteria: PostSearchInput) {
