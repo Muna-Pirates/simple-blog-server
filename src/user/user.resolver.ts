@@ -30,7 +30,8 @@ export class UserResolver {
 
     const user = await this.userService.create({
       ...input,
-      passwordHash: hashedPassword,
+      password: hashedPassword,
+      role: { connect: { name: 'USER' } },
     });
 
     return user;
