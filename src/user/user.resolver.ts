@@ -29,7 +29,6 @@ export class UserResolver {
     @Args('createUserInput') createUserInput: CreateUserInput,
   ): Promise<User> {
     const { email, password, name, roleId } = createUserInput;
-
     try {
       return await this.userService.create({
         email,
@@ -51,7 +50,9 @@ export class UserResolver {
       credentials.password,
     );
 
-    if (!user) throw new Error('Invalid credentials');
+    if (!user) {
+      throw new NotFoundException('Invalid credentials');
+    }
 
     const token = this.authService.generateJwtToken(user);
     return { user, token };
@@ -62,10 +63,7 @@ export class UserResolver {
   async viewUserProfile(
     @CurrentUser() currentUser: User,
   ): Promise<User | null> {
-    const user = await this.userService.findById(currentUser.id);
-    if (!user) throw new Error(`User with ID ${currentUser.id} does not exist`);
-
-    return user;
+    return this.ensureUserExists(currentUser.id);
   }
 
   @Mutation(() => User)
@@ -75,7 +73,6 @@ export class UserResolver {
     @Args('updateData') updateData: UpdateUserInput,
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
-
     this.authorizeUserAction(user.id, updateData.id, user.roleId);
 
     return this.userService.update(updateData.id, updateData);
@@ -88,7 +85,6 @@ export class UserResolver {
     @Args('id', { type: () => Int }) id: number,
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
-
     this.authorizeUserAction(user.id, id, user.roleId);
 
     return this.userService.delete(id);
@@ -96,7 +92,9 @@ export class UserResolver {
 
   private async ensureUserExists(userId: number): Promise<User> {
     const user = await this.userService.findById(userId);
-    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
     return user;
   }
 
