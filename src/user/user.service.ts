@@ -30,4 +30,31 @@ export class UserService {
       throw error;
     }
   }
+
+  async findById(id: number): Promise<User | null> {
+    try {
+      return await this.prisma.user.findUnique({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      console.error('Error finding user by id', error);
+      throw error;
+    }
+  }
+
+  async update(id: number, data: Prisma.UserUpdateInput): Promise<User | null> {
+    try {
+      return await this.prisma.user.update({
+        where: {
+          id,
+        },
+        data,
+      });
+    } catch (error) {
+      console.error('Error updating user', error);
+      throw error;
+    }
+  }
 }
