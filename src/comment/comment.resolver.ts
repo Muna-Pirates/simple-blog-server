@@ -18,6 +18,12 @@ export class CommentResolver {
     private readonly postService: PostService,
   ) {}
 
+  private throwIfNotFound(item: any, itemName: string, id?: number): void {
+    if (!item) {
+      throw new Error(`${itemName} not found${id ? ` with ID ${id}` : ''}.`);
+    }
+  }
+
   @Mutation(() => Comment)
   @UseGuards(GqlAuthGuard)
   async addComment(
@@ -25,10 +31,7 @@ export class CommentResolver {
     @CurrentUser() user: User,
   ) {
     const post = await this.postService.findOneById(createCommentInput.postId);
-
-    if (!post) {
-      throw new Error('Post not found');
-    }
+    this.throwIfNotFound(post, 'Post', createCommentInput.postId);
 
     return this.commentService.create({
       ...createCommentInput,
@@ -40,10 +43,7 @@ export class CommentResolver {
   @Query(() => [Comment], { name: 'listComments' })
   async listComments(@Args('postId', { type: () => Int }) postId: number) {
     const post = await this.postService.findPostByIdWithComments(postId);
-
-    if (!post) {
-      throw new Error(`Post with ID ${postId} not found.`);
-    }
+    this.throwIfNotFound(post, 'Post', postId);
 
     return post.comments;
   }
@@ -57,10 +57,7 @@ export class CommentResolver {
     const { id, content } = updateCommentInput;
 
     const comment = await this.commentService.findOne(id);
-
-    if (!comment) {
-      throw new Error('Comment not found');
-    }
+    this.throwIfNotFound(comment, 'Comment', id);
 
     if (comment.authorId !== user.id) {
       throw new Error('You are not authorized to update this comment');
@@ -76,10 +73,7 @@ export class CommentResolver {
     @CurrentUser() currentUser: User,
   ) {
     const comment = await this.commentService.findOne(commentId);
-
-    if (!comment) {
-      throw new Error('Comment not found');
-    }
+    this.throwIfNotFound(comment, 'Comment', commentId);
 
     if (
       comment.authorId !== currentUser.id &&
