@@ -9,8 +9,9 @@ import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { RoleType } from 'src/role/entities/role.entity';
 import { UpdatePostInput } from './dto/update-post.input';
+import { PostSearchInput } from './dto/post-search.input';
 
-@Resolver()
+@Resolver(() => Post)
 export class PostResolver {
   constructor(private readonly postService: PostService) {}
 
@@ -65,5 +66,32 @@ export class PostResolver {
     }
 
     return this.postService.update(postId, updateData);
+  }
+
+  @Mutation(() => Post)
+  @UseGuards(GqlAuthGuard, GqlRolesGuard)
+  async deletePost(
+    @Args('postId', { type: () => Int }) postId: number,
+    @CurrentUser() user: User,
+  ) {
+    const post = await this.postService.findOneById(postId);
+
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    if (post.authorId !== user.id && user.roleId === RoleType.ADMIN) {
+      throw new Error('You do not have permission to delete this post');
+    }
+
+    return this.postService.remove(postId);
+  }
+
+  @Query(() => [Post])
+  async searchPosts(
+    @Args('searchCriteria') searchCriteria: PostSearchInput,
+    @CurrentUser() user: User,
+  ) {
+    return this.postService.searchPosts(searchCriteria, user);
   }
 }

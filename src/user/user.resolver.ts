@@ -17,7 +17,7 @@ import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { RoleType } from 'src/role/entities/role.entity';
 
-@Resolver()
+@Resolver(() => User)
 export class UserResolver {
   constructor(
     private userService: UserService,
