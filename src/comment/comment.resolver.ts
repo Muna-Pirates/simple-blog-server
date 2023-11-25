@@ -27,7 +27,6 @@ export class CommentResolver {
       throw new Error('Post not found');
     }
 
-    // Create and return the new comment
     return this.commentService.create({
       ...createCommentInput,
       author: { connect: { id: user.id } },
