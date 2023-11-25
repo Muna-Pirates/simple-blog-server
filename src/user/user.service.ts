@@ -7,11 +7,16 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {}
-
-  async findUserById(id: number): Promise<User | null> {}
-
-  async updateUser(id: number, data: Prisma.UserUpdateInput): Promise<User> {}
-
-  async deleteUser(id: number): Promise<User> {}
+  async findByEmail(email: string): Promise<User | null> {
+    try {
+      return await this.prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+    } catch (error) {
+      console.error('Error in UserService.findByEmail()', error);
+      throw error;
+    }
+  }
 }
