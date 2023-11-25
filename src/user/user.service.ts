@@ -15,7 +15,18 @@ export class UserService {
         },
       });
     } catch (error) {
-      console.error('Error in UserService.findByEmail()', error);
+      console.error('Error finding user by email', error);
+      throw error;
+    }
+  }
+
+  async create(data: Prisma.UserCreateInput): Promise<User> {
+    try {
+      return await this.prisma.user.create({
+        data,
+      });
+    } catch (error) {
+      console.error('Error creating user', error);
       throw error;
     }
   }
