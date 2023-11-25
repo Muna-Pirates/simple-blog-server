@@ -16,4 +16,7 @@ export class User {
 
   @Field()
   updatedAt: Date;
+
+  @Field()
+  roleId: number;
 }

@@ -10,6 +10,8 @@ import { CommentModule } from './comment/comment.module';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { RoleModule } from './role/role.module';
+import { PrismaService } from './common/prisma.service';
 
 @Module({
   imports: [
@@ -26,8 +28,9 @@ import { ConfigModule } from '@nestjs/config';
     PostModule,
     CommentModule,
     AuthModule,
+    RoleModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService],
+  providers: [AppService, AuthService, PrismaService],
 })
 export class AppModule {}
