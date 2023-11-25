@@ -50,11 +50,22 @@ type Post {
   updatedAt: DateTime!
 }
 
+type PaginationInfo {
+  page: Int!
+  pageSize: Int!
+  totalItems: Int!
+}
+
+type PostPaginationResult {
+  posts: [Post!]!
+  pagination: PaginationInfo!
+}
+
 type Query {
   viewUserProfile: User
-  listPosts(pagination: PaginationInput!): [Post!]!
+  listPosts(pagination: PaginationInput!): PostPaginationResult!
   viewPost(id: Int!): Post!
-  searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): [Post!]!
+  searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): PostPaginationResult!
   listComments(postId: Int!): [Comment!]!
 }
 

@@ -11,6 +11,7 @@ import { User } from 'src/user/types/user.types';
 import { Prisma } from '@prisma/client';
 import { PostSearchInput } from './dto/post-search.input';
 import { PaginationInput } from './dto/pagination.input';
+import { PostPaginationResult } from './types/post-pagination-result.types';
 
 @Resolver(() => Post)
 export class PostResolver {
@@ -30,7 +31,7 @@ export class PostResolver {
     return this.postService.createPostWithAuthor(prismaPostInput);
   }
 
-  @Query(() => [Post])
+  @Query(() => PostPaginationResult)
   async listPosts(
     @Args('pagination', { type: () => PaginationInput })
     pagination: PaginationInput,
@@ -68,7 +69,7 @@ export class PostResolver {
     });
   }
 
-  @Query(() => [Post])
+  @Query(() => PostPaginationResult)
   async searchPosts(
     @Args('searchCriteria') searchCriteria: PostSearchInput,
     @Args('pagination', { type: () => PaginationInput })

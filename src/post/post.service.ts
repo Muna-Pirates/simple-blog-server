@@ -5,6 +5,7 @@ import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
 import { PaginationInput } from './dto/pagination.input';
+import { PostPaginationResult } from './types/post-pagination-result.types';
 
 @Injectable()
 export class PostService {
@@ -23,7 +24,7 @@ export class PostService {
     }
   }
 
-  async findAll(pagination: PaginationInput): Promise<Post[]> {
+  async findAll(pagination: PaginationInput) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
@@ -32,11 +33,20 @@ export class PostService {
       take: pageSize,
     });
 
+    const totalItems = await this.prisma.post.count();
+
     if (posts.length === 0) {
       throw new NotFoundException('No posts found');
     }
 
-    return posts;
+    return {
+      posts,
+      pagination: {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        totalItems,
+      },
+    };
   }
 
   async findOneById(postId: number): Promise<Post> {
@@ -85,15 +95,12 @@ export class PostService {
     return post;
   }
 
-  async searchPosts(
-    criteria: PostSearchInput,
-    pagination: PaginationInput,
-  ): Promise<Post[]> {
+  async searchPosts(criteria: PostSearchInput, pagination: PaginationInput) {
     const { title, content, authorId } = criteria;
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
-    return this.prisma.post.findMany({
+    const posts = await this.prisma.post.findMany({
       where: {
         title: title ? { contains: title } : undefined,
         content: content ? { contains: content } : undefined,
@@ -102,6 +109,27 @@ export class PostService {
       skip,
       take: pageSize,
     });
+
+    const totalItems = await this.prisma.post.count({
+      where: {
+        title: title ? { contains: title } : undefined,
+        content: content ? { contains: content } : undefined,
+        authorId: authorId || undefined,
+      },
+    });
+
+    if (posts.length === 0) {
+      throw new NotFoundException('No posts found');
+    }
+
+    return {
+      posts,
+      pagination: {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        totalItems,
+      },
+    };
   }
 
   async findPostByIdWithComments(postId: number) {
