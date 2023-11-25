@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from './types/user.types';
@@ -11,6 +11,8 @@ import { UseGuards } from '@nestjs/common';
 import { UpdateUserInput } from './dto/update-user.input';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
+import { GqlRolesGuard } from 'src/auth/role.guard';
+import { RoleType } from 'src/role/entities/role.entity';
 
 @Resolver()
 export class UserResolver {
@@ -34,7 +36,7 @@ export class UserResolver {
         name,
         role: {
           connect: {
-            id: roleId || 2,
+            id: roleId || RoleType.USER,
           },
         },
       });
@@ -74,20 +76,21 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  @UseGuards(GqlAuthGuard)
+  @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async updateUserProfile(
     @CurrentUser() currentUser: User,
     @Args('updateData') updateData: UpdateUserInput,
   ): Promise<User> {
-    const updatedUser = await this.userService.update(
-      currentUser.id,
-      updateData,
-    );
+    const user = await this.userService.findById(currentUser.id);
 
-    if (!updatedUser) {
-      throw new Error('User not found or update failed');
+    if (!user) {
+      throw new Error(`User with ID ${user.id} does not exist`);
     }
 
-    return updatedUser;
+    if (user.id !== updateData.id && user.roleId !== RoleType.ADMIN) {
+      throw new Error('Unauthorized access');
+    }
+
+    return this.userService.update(updateData.id, updateData);
   }
 }
