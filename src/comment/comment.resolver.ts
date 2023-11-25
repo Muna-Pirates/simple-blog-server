@@ -8,6 +8,8 @@ import { CreateCommentInput } from './dto/create-comment.input';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { Comment } from './types/comment.types';
 import { GqlRolesGuard } from 'src/auth/role.guard';
+import { UpdateCommentInput } from './dto/update-comment.input';
+import { RoleType } from 'src/role/entities/role.entity';
 
 @Resolver()
 export class CommentResolver {
@@ -65,5 +67,27 @@ export class CommentResolver {
     }
 
     return this.commentService.update(id, { content });
+  }
+
+  @Mutation(() => Comment)
+  @UseGuards(GqlAuthGuard, GqlRolesGuard)
+  async deleteComment(
+    @Args('commentId', { type: () => Int }) commentId: number,
+    @CurrentUser() currentUser: User,
+  ) {
+    const comment = await this.commentService.findOne(commentId);
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    if (
+      comment.authorId !== currentUser.id &&
+      currentUser.roleId !== RoleType.ADMIN
+    ) {
+      throw new Error('Unauthorized access');
+    }
+
+    return this.commentService.remove(commentId);
   }
 }
