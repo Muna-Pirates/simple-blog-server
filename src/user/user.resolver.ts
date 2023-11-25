@@ -92,9 +92,7 @@ export class UserResolver {
 
   private async ensureUserExists(userId: number): Promise<User> {
     const user = await this.userService.findById(userId);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
     return user;
   }
 
