@@ -16,7 +16,7 @@ export class PostResolver {
   async createPost(
     @Args('createPostInput') createPostInput: CreatePostInput,
     @CurrentUser() user: User,
-  ): Promise<Post> {
+  ) {
     const post = await this.postService.create({
       ...createPostInput,
       author: {
