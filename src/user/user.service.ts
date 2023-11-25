@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { RoleType } from 'src/role/entities/role.entity';
 
 @Injectable()
 export class UserService {
@@ -20,13 +21,34 @@ export class UserService {
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    let roleRecord;
 
     try {
+      if (data.role && data.role.connect && data.role.connect.id) {
+        roleRecord = await this.prisma.role.findUnique({
+          where: { id: data.role.connect.id },
+        });
+
+        if (!roleRecord) {
+          throw new Error(`Role with ID ${data.role.connect.id} not found.`);
+        }
+      } else {
+        roleRecord = await this.prisma.role.findUnique({
+          where: { id: RoleType.USER },
+        });
+
+        if (!roleRecord) {
+          throw new Error('Default user role not found.');
+        }
+
+        data.role = { connect: { id: RoleType.USER } };
+      }
+
       return await this.prisma.user.create({
         data: { ...data, password: hashedPassword },
       });
     } catch (error) {
-      this.logger.error('Error creating user', error.stack);
+      this.logger.error('Error creating user', error.message);
       throw error;
     }
   }
