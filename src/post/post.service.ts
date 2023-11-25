@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Post, Prisma, User } from '@prisma/client';
+import { Post, Prisma } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
@@ -102,5 +102,18 @@ export class PostService {
       skip,
       take: pageSize,
     });
+  }
+
+  async findPostByIdWithComments(postId: number) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: { comments: true },
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Post with ID ${postId} not found.`);
+    }
+
+    return post;
   }
 }

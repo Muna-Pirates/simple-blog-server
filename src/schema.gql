@@ -55,6 +55,7 @@ type Query {
   listPosts(pagination: PaginationInput!): [Post!]!
   viewPost(id: Int!): Post!
   searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): [Post!]!
+  listComments(postId: Int!): [Comment!]!
 }
 
 input PaginationInput {

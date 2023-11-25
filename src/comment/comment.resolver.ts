@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { PostService } from 'src/post/post.service';
 import { CommentService } from './comment.service';
 import { UseGuards } from '@nestjs/common';
@@ -32,5 +32,16 @@ export class CommentResolver {
       author: { connect: { id: user.id } },
       post: { connect: { id: post.id } },
     });
+  }
+
+  @Query((returns) => [Comment], { name: 'listComments' })
+  async listComments(@Args('postId', { type: () => Int }) postId: number) {
+    const post = await this.postService.findPostByIdWithComments(postId);
+
+    if (!post) {
+      throw new Error(`Post with ID ${postId} not found.`);
+    }
+
+    return post.comments;
   }
 }
