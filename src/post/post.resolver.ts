@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CreatePostInput } from './dto/create-post.input';
@@ -25,6 +25,18 @@ export class PostResolver {
         },
       },
     });
+
+    return post;
+  }
+
+  @Query(() => [Post])
+  async listPosts() {
+    return this.postService.findAll();
+  }
+
+  @Query(() => Post, { name: 'viewPost' })
+  async viewPost(@Args('id', { type: () => Int }) postId: number) {
+    const post = await this.postService.findOneById(postId);
 
     return post;
   }
