@@ -1,4 +1,4 @@
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from './types/user.types';
@@ -78,9 +78,9 @@ export class UserResolver {
     @Args('updateData') updateData: UpdateUserInput,
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
-    const userRole = await this.roleService.findRoleById(user.roleId);
 
-    this.authorizeUserAction(user.id, updateData.id, userRole.name);
+    // Pass roleId directly instead of fetching role object
+    this.authorizeUserAction(user.id, updateData.id, user.roleId);
 
     return this.userService.update(updateData.id, updateData);
   }
@@ -92,9 +92,9 @@ export class UserResolver {
     @Args('id', { type: () => Int }) id: number,
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
-    const userRole = await this.roleService.findRoleById(user.roleId);
 
-    this.authorizeUserAction(user.id, id, userRole.name);
+    // Pass roleId directly
+    this.authorizeUserAction(user.id, id, user.roleId);
 
     return this.userService.delete(id);
   }
@@ -108,9 +108,9 @@ export class UserResolver {
   private authorizeUserAction(
     currentUserId: number,
     targetUserId: number,
-    roleName: string,
+    currentRole: number,
   ): void {
-    if (currentUserId !== targetUserId && roleName !== 'ADMIN') {
+    if (currentUserId !== targetUserId && currentRole !== RoleType.ADMIN) {
       throw new ForbiddenException('Unauthorized access');
     }
   }
