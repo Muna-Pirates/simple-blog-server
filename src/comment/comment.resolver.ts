@@ -33,6 +33,8 @@ export class CommentResolver {
     const post = await this.postService.findOneById(createCommentInput.postId);
     this.throwIfNotFound(post, 'Post', createCommentInput.postId);
 
+    delete createCommentInput.postId;
+
     return this.commentService.create({
       ...createCommentInput,
       author: { connect: { id: user.id } },
