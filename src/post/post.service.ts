@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { Post, Prisma } from '@prisma/client';
+import { UpdatePostInput } from './dto/update-post.input';
 @Injectable()
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
@@ -45,5 +46,12 @@ export class PostService {
     }
 
     return post;
+  }
+
+  async update(postId: number, updateData: UpdatePostInput): Promise<Post> {
+    return this.prisma.post.update({
+      where: { id: postId },
+      data: updateData,
+    });
   }
 }
