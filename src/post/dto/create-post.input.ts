@@ -13,6 +13,6 @@ export class CreatePostInput {
   @Length(10, 5000) // Example length validation, adjust as needed
   content: string;
 
-  @Field((type) => [String], { nullable: true })
+  @Field(() => [String], { nullable: true })
   tags?: string[];
 }
