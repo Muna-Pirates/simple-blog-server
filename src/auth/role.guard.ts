@@ -1,4 +1,3 @@
-// /path/to/role.guard.ts
 import {
   Injectable,
   CanActivate,

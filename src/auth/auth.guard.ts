@@ -1,4 +1,3 @@
-// /path/to/auth.guard.ts
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthGuard } from '@nestjs/passport';

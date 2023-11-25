@@ -1,12 +1,8 @@
-// path/filename: /src/user/user.resolver.spec.ts
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserResolver } from './user.resolver';
 import { UserService } from './user.service';
 import { AuthService } from 'src/auth/auth.service';
-import { LoginInput } from 'src/auth/dto/login-input.dto';
 import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
 import { RoleType } from 'src/role/entities/role.entity';
 import { User } from '@prisma/client';
 

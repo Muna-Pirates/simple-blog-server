@@ -5,12 +5,12 @@ import { IsNotEmpty, Length } from 'class-validator';
 export class CreatePostInput {
   @Field()
   @IsNotEmpty()
-  @Length(3, 50) // Example length validation, adjust as needed
+  @Length(3, 50)
   title: string;
 
   @Field()
   @IsNotEmpty()
-  @Length(10, 5000) // Example length validation, adjust as needed
+  @Length(10, 5000)
   content: string;
 
   @Field(() => [String], { nullable: true })

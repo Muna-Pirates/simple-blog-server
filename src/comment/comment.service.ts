@@ -17,4 +17,17 @@ export class CommentService {
       throw new Error('Failed to create comment');
     }
   }
+
+  async findOne(id: number): Promise<Comment | null> {
+    return this.prisma.comment.findUnique({
+      where: { id },
+    });
+  }
+
+  async update(id: number, updateData: { content: string }): Promise<Comment> {
+    return this.prisma.comment.update({
+      where: { id },
+      data: updateData,
+    });
+  }
 }

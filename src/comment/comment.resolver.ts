@@ -7,6 +7,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { Comment } from './types/comment.types';
+import { GqlRolesGuard } from 'src/auth/role.guard';
 
 @Resolver()
 export class CommentResolver {
@@ -34,7 +35,7 @@ export class CommentResolver {
     });
   }
 
-  @Query((returns) => [Comment], { name: 'listComments' })
+  @Query(() => [Comment], { name: 'listComments' })
   async listComments(@Args('postId', { type: () => Int }) postId: number) {
     const post = await this.postService.findPostByIdWithComments(postId);
 
@@ -43,5 +44,26 @@ export class CommentResolver {
     }
 
     return post.comments;
+  }
+
+  @Mutation(() => Comment)
+  @UseGuards(GqlAuthGuard, GqlRolesGuard)
+  async updateComment(
+    @Args('updateCommentInput') updateCommentInput: UpdateCommentInput,
+    @CurrentUser() user: User,
+  ) {
+    const { id, content } = updateCommentInput;
+
+    const comment = await this.commentService.findOne(id);
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    if (comment.authorId !== user.id) {
+      throw new Error('You are not authorized to update this comment');
+    }
+
+    return this.commentService.update(id, { content });
   }
 }
