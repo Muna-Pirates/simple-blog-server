@@ -15,6 +15,8 @@ model User {
   email     String    @unique
   name      String?
   password  String
+  roleId    Int
+  role      Role      @relation(fields: [roleId], references: [id])
   posts     Post[]
   comments  Comment[]
   createdAt DateTime  @default(now())
@@ -48,4 +50,10 @@ model Category {
   id       Int    @id @default(autoincrement())
   name     String @unique
   posts    Post[]
+}
+
+model Role {
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  users     User[]
 }
