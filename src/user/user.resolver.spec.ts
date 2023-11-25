@@ -71,7 +71,5 @@ describe('UserResolver', () => {
       expect(await resolver.registerUser(userInput)).toEqual(user);
       expect(userService.create).toHaveBeenCalledWith(userInput);
     });
-
-    // Add more test cases for different scenarios like duplicate email, etc.
   });
 });
