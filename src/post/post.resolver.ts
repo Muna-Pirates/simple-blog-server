@@ -16,6 +16,8 @@ import { PostSearchInput } from './dto/post-search.input';
 export class PostResolver {
   constructor(private readonly postService: PostService) {}
 
+  @Mutation(() => Post)
+  @UseGuards(GqlAuthGuard)
   async createPost(
     @Args('createPostInput') createPostInput: CreatePostInput,
     @CurrentUser() user: User,

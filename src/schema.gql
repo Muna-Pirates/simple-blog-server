@@ -21,8 +21,39 @@ type AuthPayload {
   token: String!
 }
 
+type Category {
+  id: Int!
+  name: String!
+  posts: [Post]
+}
+
+type Comment {
+  id: Int!
+  content: String!
+  author: User!
+  authorId: Int!
+  post: Post!
+  postId: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Post {
+  id: Int!
+  title: String!
+  content: String!
+  author: User!
+  authorId: Int!
+  comments: [Comment]
+  category: Category
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   viewUserProfile: User
+  listPosts: [Post!]!
+  viewPost(id: Int!): Post!
 }
 
 type Mutation {
@@ -30,6 +61,9 @@ type Mutation {
   loginUser(credentials: LoginInput!): AuthPayload!
   updateUserProfile(updateData: UpdateUserInput!): User!
   deleteUser(id: Int!): User!
+  createPost(createPostInput: CreatePostInput!): Post!
+  updatePost(postId: Int!, updateData: UpdatePostInput!): Post!
+  deletePost(postId: Int!): Post!
 }
 
 input CreateUserInput {
@@ -48,4 +82,15 @@ input UpdateUserInput {
   id: Int!
   email: String
   name: String
+}
+
+input CreatePostInput {
+  title: String!
+  content: String!
+  tags: [String!]
+}
+
+input UpdatePostInput {
+  title: String
+  content: String
 }
