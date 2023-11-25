@@ -8,14 +8,14 @@ import { LoginInput } from 'src/auth/dto/login-input.dto';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { RoleType } from 'src/role/entities/role.entity';
+import { User } from '@prisma/client';
 
 describe('UserResolver', () => {
   let resolver: UserResolver;
-  let userService: UserService;
-  let authService: AuthService;
+  let userService: jest.Mocked<UserService>;
+  let authService: jest.Mocked<AuthService>;
 
   beforeEach(async () => {
-    // Mock UserService and AuthService
     const userServiceMock = {
       create: jest.fn(),
       findById: jest.fn(),
@@ -36,11 +36,42 @@ describe('UserResolver', () => {
     }).compile();
 
     resolver = module.get<UserResolver>(UserResolver);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthService>(AuthService);
+    userService = module.get<UserService>(
+      UserService,
+    ) as jest.Mocked<UserService>;
+    authService = module.get<AuthService>(
+      AuthService,
+    ) as jest.Mocked<AuthService>;
   });
 
   it('should be defined', () => {
     expect(resolver).toBeDefined();
+  });
+
+  describe('registerUser', () => {
+    it('should successfully register a user', async () => {
+      const userInput: CreateUserInput = {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'John Doe',
+        roleId: RoleType.USER,
+      };
+
+      const user: User = {
+        ...userInput,
+        id: 1,
+        name: 'John Doe',
+        roleId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      userService.create.mockResolvedValue(user);
+
+      expect(await resolver.registerUser(userInput)).toEqual(user);
+      expect(userService.create).toHaveBeenCalledWith(userInput);
+    });
+
+    // Add more test cases for different scenarios like duplicate email, etc.
   });
 });
