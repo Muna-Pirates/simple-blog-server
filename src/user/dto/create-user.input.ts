@@ -1,21 +1,21 @@
-// src/user/dto/create-user.input.ts
-
-import { InputType, Field } from '@nestjs/graphql';
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 @InputType()
 export class CreateUserInput {
   @Field()
-  @IsEmail({}, { message: 'Invalid email format' })
+  @IsEmail()
   email: string;
 
   @Field()
   @IsString()
-  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @MinLength(8)
   password: string;
 
   @Field({ nullable: true })
   @IsString()
-  @IsOptional()
   name?: string;
+
+  @Field(() => Int, { nullable: true })
+  roleId?: number;
 }

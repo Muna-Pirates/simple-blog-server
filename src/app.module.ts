@@ -7,6 +7,7 @@ import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { CommentModule } from './comment/comment.module';
     CommentModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AuthService],
 })
 export class AppModule {}

@@ -5,6 +5,9 @@ import { User } from './types/user.types';
 import { NotFoundException, UseGuards } from '@nestjs/common';
 import { UpdateUserInput } from './dto/update-user.input';
 import * as bcrypt from 'bcrypt';
+import { AuthService } from 'src/auth/auth.service';
+import { AuthPayload } from 'src/auth/dto/auth-payload.dto';
+import { LoginInput } from 'src/auth/dto/login-input.dto';
 
 // registerUser(input: CreateUserInput): User
 // loginUser(input: LoginInput): AuthPayload
@@ -13,27 +16,32 @@ import * as bcrypt from 'bcrypt';
 // deleteUser(userId: Int): Boolean
 @Resolver()
 export class UserResolver {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private authService: AuthService,
+  ) {}
 
   @Mutation(() => User)
-  async registerUser(@Args('input') input: CreateUserInput): Promise<User> {
-    if (input.password.length < 8) {
-      throw new Error('Password must be at least 8 characters long.');
+  async registerUser(
+    @Args('createUserInput') createUserInput: CreateUserInput,
+  ): Promise<User> {
+    const { email, password, name, roleId } = createUserInput;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    try {
+      return await this.userService.create({
+        email,
+        password: hashedPassword,
+        name,
+        role: {
+          connect: {
+            id: roleId || 2,
+          },
+        },
+      });
+    } catch (error) {
+      throw new Error(error.message);
     }
-
-    const existingUser = await this.userService.findByEmail(input.email);
-    if (existingUser) {
-      throw new Error('Email is already in use.');
-    }
-
-    const hashedPassword = await bcrypt.hash(input.password, 10);
-
-    const user = await this.userService.create({
-      ...input,
-      password: hashedPassword,
-      role: { connect: { name: 'USER' } },
-    });
-
-    return user;
   }
 }
