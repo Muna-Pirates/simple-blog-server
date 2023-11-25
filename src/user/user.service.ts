@@ -45,7 +45,7 @@ export class UserService {
       }
 
       return await this.prisma.user.create({
-        data: { ...data },
+        data: { ...data, password: hashedPassword },
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
