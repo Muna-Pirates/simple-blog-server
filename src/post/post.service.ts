@@ -4,6 +4,7 @@ import { Post, Prisma, User } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
+import { PaginationInput } from './dto/pagination.input';
 
 @Injectable()
 export class PostService {
@@ -22,11 +23,19 @@ export class PostService {
     }
   }
 
-  async findAll(): Promise<Post[]> {
-    const posts = await this.prisma.post.findMany();
+  async findAll(pagination: PaginationInput): Promise<Post[]> {
+    const { page, pageSize } = pagination;
+    const skip = (page - 1) * pageSize;
+
+    const posts = await this.prisma.post.findMany({
+      skip,
+      take: pageSize,
+    });
+
     if (posts.length === 0) {
       throw new NotFoundException('No posts found');
     }
+
     return posts;
   }
 
@@ -76,8 +85,13 @@ export class PostService {
     return post;
   }
 
-  async searchPosts(criteria: PostSearchInput): Promise<Post[]> {
+  async searchPosts(
+    criteria: PostSearchInput,
+    pagination: PaginationInput,
+  ): Promise<Post[]> {
     const { title, content, authorId } = criteria;
+    const { page, pageSize } = pagination;
+    const skip = (page - 1) * pageSize;
 
     return this.prisma.post.findMany({
       where: {
@@ -85,6 +99,8 @@ export class PostService {
         content: content ? { contains: content } : undefined,
         authorId: authorId || undefined,
       },
+      skip,
+      take: pageSize,
     });
   }
 }

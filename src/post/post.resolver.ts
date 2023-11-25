@@ -11,6 +11,7 @@ import { Post } from './types/post.types';
 import { User } from 'src/user/types/user.types';
 import { Prisma } from '@prisma/client';
 import { PostSearchInput } from './dto/post-search.input';
+import { PaginationInput } from './dto/pagination.input';
 
 @Resolver(() => Post)
 export class PostResolver {
@@ -31,8 +32,8 @@ export class PostResolver {
   }
 
   @Query(() => [Post])
-  async listPosts() {
-    return this.postService.findAll();
+  async listPosts(@Args() pagination: PaginationInput) {
+    return this.postService.findAll(pagination);
   }
 
   @Query(() => Post, { name: 'viewPost' })
@@ -65,7 +66,11 @@ export class PostResolver {
     });
   }
 
-  async searchPosts(@Args('searchCriteria') searchCriteria: PostSearchInput) {
-    return this.postService.searchPosts(searchCriteria);
+  @Query(() => [Post])
+  async searchPosts(
+    @Args('searchCriteria') searchCriteria: PostSearchInput,
+    @Args() pagination: PaginationInput,
+  ) {
+    return this.postService.searchPosts(searchCriteria, pagination);
   }
 }
