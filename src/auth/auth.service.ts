@@ -9,22 +9,14 @@ export class AuthService {
   constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (user && (await bcrypt.compare(password, user.password))) {
-        return user;
-      }
-
-      return null;
-    } catch (error) {
-      throw new Error('Error validating user');
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
     }
+    return null;
   }
 
-  async generateJwtToken(user: User): Promise<string> {
+  generateJwtToken(user: User): string {
     const payload = { username: user.email, sub: user.id };
     return this.jwtService.sign(payload);
   }

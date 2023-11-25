@@ -1,19 +1,17 @@
-import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from './types/user.types';
-import { NotFoundException, UseGuards } from '@nestjs/common';
-import { UpdateUserInput } from './dto/update-user.input';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthPayload } from 'src/auth/dto/auth-payload.dto';
 import { LoginInput } from 'src/auth/dto/login-input.dto';
+import { Int, Query } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { UpdateUserInput } from './dto/update-user.input';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { GqlAuthGuard } from 'src/auth/auth.guard';
 
-// registerUser(input: CreateUserInput): User
-// loginUser(input: LoginInput): AuthPayload
-// getUserProfile(userId: Int): User
-// updateUserProfile(userId: Int, input: UpdateUserInput): User
-// deleteUser(userId: Int): Boolean
 @Resolver()
 export class UserResolver {
   constructor(
@@ -43,5 +41,53 @@ export class UserResolver {
     } catch (error) {
       throw new Error(error.message);
     }
+  }
+
+  @Mutation(() => AuthPayload)
+  async loginUser(
+    @Args('credentials') credentials: LoginInput,
+  ): Promise<AuthPayload> {
+    const user = await this.authService.validateUser(
+      credentials.email,
+      credentials.password,
+    );
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    const token = this.authService.generateJwtToken(user);
+    return { user, token };
+  }
+
+  @Query((returns) => User, { nullable: true })
+  @UseGuards(GqlAuthGuard)
+  async viewUserProfile(
+    @CurrentUser() currentUser: User,
+  ): Promise<User | null> {
+    const user = await this.userService.findById(currentUser.id);
+
+    if (!user) {
+      throw new Error(`User with ID ${user.id} does not exist`);
+    }
+
+    return user;
+  }
+
+  @Mutation(() => User)
+  @UseGuards(GqlAuthGuard)
+  async updateUserProfile(
+    @CurrentUser() currentUser: User,
+    @Args('updateData') updateData: UpdateUserInput,
+  ): Promise<User> {
+    const updatedUser = await this.userService.update(
+      currentUser.id,
+      updateData,
+    );
+
+    if (!updatedUser) {
+      throw new Error('User not found or update failed');
+    }
+
+    return updatedUser;
   }
 }
