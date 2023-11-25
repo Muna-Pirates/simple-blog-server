@@ -52,8 +52,20 @@ type Post {
 
 type Query {
   viewUserProfile: User
-  listPosts: [Post!]!
+  listPosts(pagination: PaginationInput!): [Post!]!
   viewPost(id: Int!): Post!
+  searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): [Post!]!
+}
+
+input PaginationInput {
+  page: Int! = 1
+  pageSize: Int! = 10
+}
+
+input PostSearchInput {
+  title: String
+  content: String
+  authorId: Int
 }
 
 type Mutation {

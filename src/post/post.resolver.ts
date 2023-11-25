@@ -32,7 +32,10 @@ export class PostResolver {
   }
 
   @Query(() => [Post])
-  async listPosts(@Args() pagination: PaginationInput) {
+  async listPosts(
+    @Args('pagination', { type: () => PaginationInput })
+    pagination: PaginationInput,
+  ) {
     return this.postService.findAll(pagination);
   }
 
@@ -69,7 +72,8 @@ export class PostResolver {
   @Query(() => [Post])
   async searchPosts(
     @Args('searchCriteria') searchCriteria: PostSearchInput,
-    @Args() pagination: PaginationInput,
+    @Args('pagination', { type: () => PaginationInput })
+    pagination: PaginationInput,
   ) {
     return this.postService.searchPosts(searchCriteria, pagination);
   }
