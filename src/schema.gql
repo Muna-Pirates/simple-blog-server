@@ -76,6 +76,7 @@ type Mutation {
   createPost(createPostInput: CreatePostInput!): Post!
   updatePost(postId: Int!, updateData: UpdatePostInput!): Post!
   deletePost(postId: Int!): Post!
+  addComment(createCommentInput: CreateCommentInput!): Comment!
 }
 
 input CreateUserInput {
@@ -105,4 +106,9 @@ input CreatePostInput {
 input UpdatePostInput {
   title: String
   content: String
+}
+
+input CreateCommentInput {
+  postId: Int!
+  content: String!
 }
