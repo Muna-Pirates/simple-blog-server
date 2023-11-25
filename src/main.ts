@@ -1,12 +1,38 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function seedDatabase() {
+  const roleData = [{ name: 'Admin' }, { name: 'User' }];
+
+  for (const role of roleData) {
+    const existingRole = await prisma.role.findUnique({
+      where: { name: role.name },
+    });
+
+    if (!existingRole) {
+      await prisma.role.create({ data: role });
+    }
+  }
+}
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  try {
+    await seedDatabase();
+    console.log('Database seeding completed.');
 
-  app.useGlobalPipes(new ValidationPipe());
+    const app = await NestFactory.create(AppModule);
 
-  await app.listen(3000);
+    app.useGlobalPipes(new ValidationPipe());
+
+    await app.listen(3000);
+    console.log(`Application is running on: ${await app.getUrl()}`);
+  } catch (error) {
+    console.error('Error during seeding or app initialization:', error);
+    process.exit(1);
+  }
 }
 bootstrap();
