@@ -79,7 +79,6 @@ export class UserResolver {
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
 
-    // Pass roleId directly instead of fetching role object
     this.authorizeUserAction(user.id, updateData.id, user.roleId);
 
     return this.userService.update(updateData.id, updateData);
@@ -93,7 +92,6 @@ export class UserResolver {
   ): Promise<User> {
     const user = await this.ensureUserExists(currentUser.id);
 
-    // Pass roleId directly
     this.authorizeUserAction(user.id, id, user.roleId);
 
     return this.userService.delete(id);
