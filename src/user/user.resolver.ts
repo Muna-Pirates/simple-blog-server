@@ -2,7 +2,6 @@ import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { User } from './types/user.types';
-import * as bcrypt from 'bcrypt';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthPayload } from 'src/auth/dto/auth-payload.dto';
 import { LoginInput } from 'src/auth/dto/login-input.dto';
@@ -17,14 +16,12 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { RoleType } from 'src/role/entities/role.entity';
-import { RoleService } from 'src/role/role.service';
 
 @Resolver()
 export class UserResolver {
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private roleService: RoleService,
   ) {}
 
   @Mutation(() => User)
@@ -32,12 +29,11 @@ export class UserResolver {
     @Args('createUserInput') createUserInput: CreateUserInput,
   ): Promise<User> {
     const { email, password, name, roleId } = createUserInput;
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
       return await this.userService.create({
         email,
-        password: hashedPassword,
+        password,
         name,
         role: { connect: { id: roleId || RoleType.USER } },
       });
@@ -54,6 +50,7 @@ export class UserResolver {
       credentials.email,
       credentials.password,
     );
+
     if (!user) throw new Error('Invalid credentials');
 
     const token = this.authService.generateJwtToken(user);
