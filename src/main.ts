@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import helmet from 'helmet';
 
 const prisma = new PrismaClient();
 
@@ -27,6 +28,11 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     app.useGlobalPipes(new ValidationPipe());
+    app.enableCors({
+      origin: 'http://localhost:7777',
+      credentials: true,
+    });
+    app.use(helmet({ contentSecurityPolicy: false }));
 
     await app.listen(3000);
     console.log(`Application is running on: ${await app.getUrl()}`);
