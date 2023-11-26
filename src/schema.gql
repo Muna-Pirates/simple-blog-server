@@ -140,5 +140,5 @@ input CreateCategoryInput {
 }
 
 type Subscription {
-  onCommentAdded(postId: Float!): Comment!
+  onCommentAdded(postId: Int!): Comment!
 }

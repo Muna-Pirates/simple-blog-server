@@ -51,7 +51,9 @@ export class CommentResolver {
       post: { connect: { id: post.id } },
     });
 
-    this.pubSubService.publish('commentAdded', { commentAdded: comment });
+    this.pubSubService.publish('onCommentAdded', {
+      onCommentAdded: comment,
+    });
 
     return comment;
   }
@@ -107,7 +109,7 @@ export class CommentResolver {
       return payload.onCommentAdded.postId === variables.postId;
     },
   })
-  onCommentAdded(@Args('postId') postId: number) {
+  onCommentAdded(@Args('postId', { type: () => Int }) postId: number) {
     return this.pubSubService.asyncIterator<Comment>('onCommentAdded');
   }
 }
