@@ -1,21 +1,38 @@
+# /path/to/your/Dockerfile
 
-# Use an official Node.js runtime as a parent image
-FROM node:latest
+# 1. Base Image
+FROM node:latest as builder
 
-# Set the working directory in the container
+# 2. Setting up working directory
 WORKDIR /usr/src/app
 
-# Copy the current directory contents into the container at /usr/src/app
+# 3. Copy package.json and yarn.lock
+COPY package*.json yarn.lock ./
+
+# 4. Install dependencies
+RUN yarn install --frozen-lockfile
+
+# 5. Copy prisma schema
+COPY prisma ./prisma/
+
+# 6. Generate Prisma client
+RUN npx prisma generate
+
+# 7. Copy the rest of your application's source code
 COPY . .
 
-# Install any needed packages specified in package.json
-RUN npm install
+# 8. Build the application
+RUN yarn build
 
-# Make port available to the world outside this container
+# Stage 2: Run stage
+FROM node:latest
+
+WORKDIR /usr/src/app
+
+COPY --from=builder /usr/src/app .
+
+# 9. Expose the port the app runs on
 EXPOSE 3000
 
-# Define environment variable
-ENV NODE_ENV production
-
-# Run the application when the container launches
-CMD ["npm", "run", "start:prod"]
+# 10. Define the command to run your app
+CMD ["node", "dist/main"]
