@@ -1,4 +1,11 @@
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
 import { PostService } from 'src/post/post.service';
 import { CommentService } from './comment.service';
 import { UseGuards } from '@nestjs/common';
@@ -10,12 +17,15 @@ import { Comment } from './types/comment.types';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { UpdateCommentInput } from './dto/update-comment.input';
 import { RoleType } from 'src/role/entities/role.entity';
+import { PubSub } from 'graphql-subscriptions';
+import { PubSubService } from 'src/common/pubsub.service';
 
 @Resolver()
 export class CommentResolver {
   constructor(
     private readonly commentService: CommentService,
     private readonly postService: PostService,
+    private readonly pubSubService: PubSubService,
   ) {}
 
   private throwIfNotFound(item: any, itemName: string, id?: number): void {
@@ -35,11 +45,15 @@ export class CommentResolver {
 
     delete createCommentInput.postId;
 
-    return this.commentService.create({
+    const comment = await this.commentService.create({
       ...createCommentInput,
       author: { connect: { id: user.id } },
       post: { connect: { id: post.id } },
     });
+
+    this.pubSubService.publish('commentAdded', { commentAdded: comment });
+
+    return comment;
   }
 
   @Query(() => [Comment], { name: 'listComments' })
@@ -85,5 +99,15 @@ export class CommentResolver {
     }
 
     return this.commentService.remove(commentId);
+  }
+
+  @Subscription(() => Comment, {
+    name: 'onCommentAdded',
+    filter: (payload, variables) => {
+      return payload.onCommentAdded.postId === variables.postId;
+    },
+  })
+  onCommentAdded(@Args('postId') postId: number) {
+    return this.pubSubService.asyncIterator<Comment>('onCommentAdded');
   }
 }

@@ -13,6 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
+import { PubSubService } from './common/pubsub.service';
 
 @Module({
   imports: [
@@ -24,6 +25,9 @@ import { CategoryModule } from './category/category.module';
       driver: ApolloDriver,
       playground: true,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      subscriptions: {
+        'graphql-ws': true,
+      },
     }),
     UserModule,
     PostModule,
@@ -33,6 +37,7 @@ import { CategoryModule } from './category/category.module';
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService, PrismaService],
+  providers: [AppService, AuthService, PrismaService, PubSubService],
+  exports: [PrismaService, PubSubService],
 })
 export class AppModule {}
