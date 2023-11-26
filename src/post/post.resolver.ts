@@ -77,4 +77,20 @@ export class PostResolver {
   ) {
     return this.postService.searchPosts(searchCriteria, pagination);
   }
+
+  @Mutation(() => Post)
+  @UseGuards(GqlAuthGuard, GqlRolesGuard)
+  async assignCategoryToPost(
+    @Args('postId', { type: () => Int }) postId: number,
+    @Args('categoryId', { type: () => Int }) categoryId: number,
+  ) {
+    return this.postService.assignCategoryToPost(postId, categoryId);
+  }
+
+  @Query(() => [Post])
+  async filterPostsByCategory(
+    @Args('categoryId', { type: () => Int }) categoryId: number,
+  ) {
+    return this.postService.filterPostsByCategory(categoryId);
+  }
 }

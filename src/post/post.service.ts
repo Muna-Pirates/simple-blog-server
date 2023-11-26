@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Post, Prisma } from '@prisma/client';
+import { Category, Post, Prisma } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
@@ -143,5 +143,29 @@ export class PostService {
     }
 
     return post;
+  }
+
+  async assignCategoryToPost(
+    postId: number,
+    categoryId: number,
+  ): Promise<Post> {
+    return this.prisma.post.update({
+      where: { id: postId },
+      data: {
+        categoryId: categoryId,
+      },
+    });
+  }
+
+  async filterPostsByCategory(categoryId: number): Promise<Post[]> {
+    return this.prisma.post.findMany({
+      where: {
+        categoryId: categoryId,
+      },
+      include: {
+        author: true,
+        comments: true,
+      },
+    });
   }
 }

@@ -66,6 +66,7 @@ type Query {
   listPosts(pagination: PaginationInput!): PostPaginationResult!
   viewPost(id: Int!): Post!
   searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): PostPaginationResult!
+  filterPostsByCategory(categoryId: Int!): [Post!]!
   listComments(postId: Int!): [Comment!]!
 }
 
@@ -88,9 +89,11 @@ type Mutation {
   createPost(createPostInput: CreatePostInput!): Post!
   updatePost(postId: Int!, updateData: UpdatePostInput!): Post!
   deletePost(postId: Int!): Post!
+  assignCategoryToPost(postId: Int!, categoryId: Int!): Post!
   addComment(createCommentInput: CreateCommentInput!): Comment!
   updateComment(updateCommentInput: UpdateCommentInput!): Comment!
   deleteComment(commentId: Int!): Comment!
+  createCategory(createCategoryInput: CreateCategoryInput!): Category!
 }
 
 input CreateUserInput {
@@ -130,4 +133,8 @@ input CreateCommentInput {
 input UpdateCommentInput {
   id: Int!
   content: String!
+}
+
+input CreateCategoryInput {
+  name: String!
 }
