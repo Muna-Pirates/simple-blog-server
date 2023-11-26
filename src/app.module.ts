@@ -13,7 +13,6 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { PubSubService } from './common/pubsub.service';
 
 @Module({
   imports: [
@@ -37,7 +36,6 @@ import { PubSubService } from './common/pubsub.service';
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService, PrismaService, PubSubService],
-  exports: [PrismaService, PubSubService],
+  providers: [AppService, AuthService, PrismaService],
 })
 export class AppModule {}
