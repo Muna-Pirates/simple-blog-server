@@ -13,7 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { YogaDriver } from '@graphql-yoga/nestjs';
+import { YogaDriver, YogaDriverConfig } from '@graphql-yoga/nestjs';
 
 @Module({
   imports: [
@@ -21,9 +21,8 @@ import { YogaDriver } from '@graphql-yoga/nestjs';
       envFilePath: '.env',
       isGlobal: true,
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRoot<YogaDriverConfig>({
       driver: YogaDriver,
-      playground: true,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       subscriptions: {
         'graphql-ws': true,
