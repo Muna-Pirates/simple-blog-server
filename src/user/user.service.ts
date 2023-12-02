@@ -3,6 +3,7 @@ import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
+import { CustomGraphQLError } from 'src/common/errors/error-handler';
 
 @Injectable()
 export class UserService {

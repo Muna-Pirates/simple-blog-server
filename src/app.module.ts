@@ -13,7 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { GraphQLError } from 'graphql';
+import { CustomGraphQLError } from './common/errors/error-handler';
 
 @Module({
   imports: [
@@ -27,18 +27,7 @@ import { GraphQLError } from 'graphql';
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: (error: GraphQLError) => {
-        // Log the original error for debugging (optional)
-        console.error(error);
-
-        // Return a generic error message for sensitive errors
-        if (error.extensions?.code === 'INTERNAL_SERVER_ERROR') {
-          return new GraphQLError('Internal server error');
-        }
-
-        // Return the error as is for non-sensitive errors
-        return error;
-      },
+      formatError: CustomGraphQLError.formatError,
     }),
     UserModule,
     PostModule,

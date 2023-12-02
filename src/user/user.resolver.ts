@@ -29,20 +29,13 @@ export class UserResolver {
     @Args('createUserInput') createUserInput: CreateUserInput,
   ): Promise<User> {
     const { email, password, name, roleId } = createUserInput;
-    try {
-      return await this.userService.create({
-        email,
-        password,
-        name,
-        role: { connect: { id: roleId || RoleType.USER } },
-      });
-    } catch (error) {
-      if (error.code === 'P2002') {
-        throw new ForbiddenException('Email already exists');
-      }
 
-      throw new Error(error.message);
-    }
+    return await this.userService.create({
+      email,
+      password,
+      name,
+      role: { connect: { id: roleId || RoleType.USER } },
+    });
   }
 
   @Mutation(() => AuthPayload)
