@@ -37,6 +37,10 @@ export class UserResolver {
         role: { connect: { id: roleId || RoleType.USER } },
       });
     } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ForbiddenException('Email already exists');
+      }
+
       throw new Error(error.message);
     }
   }
