@@ -21,8 +21,8 @@ import { YogaDriver, YogaDriverConfig } from '@graphql-yoga/nestjs';
       envFilePath: '.env',
       isGlobal: true,
     }),
-    GraphQLModule.forRoot<YogaDriverConfig>({
-      driver: YogaDriver,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       subscriptions: {
         'graphql-ws': true,
