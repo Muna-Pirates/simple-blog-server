@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Post, Prisma } from '@prisma/client';
+import { Post as PrismaPost, Prisma } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
@@ -14,7 +14,7 @@ import { PaginationInput } from './dto/pagination.input';
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async findPostOrThrow(postId: number): Promise<Post> {
+  private async findPostOrThrow(postId: number): Promise<PrismaPost> {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -26,7 +26,7 @@ export class PostService {
     return post;
   }
 
-  private checkAuthorization(post: Post, userId: number, roleId: number) {
+  private checkAuthorization(post: PrismaPost, userId: number, roleId: number) {
     if (post.authorId !== userId && roleId !== RoleType.ADMIN) {
       throw new UnauthorizedException('Unauthorized action on this post');
     }
@@ -34,15 +34,11 @@ export class PostService {
 
   async createPostWithAuthor(
     createPostInput: Prisma.PostCreateInput,
-  ): Promise<Post> {
-    try {
-      return await this.prisma.post.create({
-        data: createPostInput,
-        include: { author: true },
-      });
-    } catch (error) {
-      throw new Error(`Error creating post: ${error.message}`);
-    }
+  ): Promise<PrismaPost> {
+    return this.prisma.post.create({
+      data: createPostInput,
+      include: { author: true },
+    });
   }
 
   async findAll(pagination: PaginationInput) {
@@ -57,10 +53,6 @@ export class PostService {
 
     const totalItems = await this.prisma.post.count();
 
-    if (posts.length === 0) {
-      throw new NotFoundException('No posts found');
-    }
-
     return {
       posts,
       pagination: {
@@ -71,23 +63,15 @@ export class PostService {
     };
   }
 
-  async findOneById(postId: number): Promise<Post> {
-    const post = await this.prisma.post.findUnique({
-      where: { id: postId },
-    });
-
-    if (!post) {
-      throw new NotFoundException(`Post with ID ${postId} not found.`);
-    }
-
-    return post;
+  async findOneById(postId: number): Promise<PrismaPost> {
+    return this.findPostOrThrow(postId);
   }
 
   async updatePostWithAuthorization(
     postId: number,
     updateData: UpdatePostInput,
     user: { id: number; roleId: number },
-  ): Promise<Post> {
+  ): Promise<PrismaPost> {
     const post = await this.findPostOrThrow(postId);
     this.checkAuthorization(post, user.id, user.roleId);
 
@@ -100,7 +84,7 @@ export class PostService {
   async deletePostWithAuthorization(
     postId: number,
     user: { id: number; roleId: number },
-  ): Promise<Post> {
+  ): Promise<PrismaPost> {
     const post = await this.findPostOrThrow(postId);
     this.checkAuthorization(post, user.id, user.roleId);
 
@@ -114,7 +98,7 @@ export class PostService {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
-    const whereClause = {
+    const whereClause: Prisma.PostWhereInput = {
       title: title ? { contains: title } : undefined,
       content: content ? { contains: content } : undefined,
       authorId: authorId || undefined,
@@ -129,10 +113,6 @@ export class PostService {
 
     const totalItems = await this.prisma.post.count({ where: whereClause });
 
-    if (posts.length === 0) {
-      throw new NotFoundException('No posts found');
-    }
-
     return {
       posts,
       pagination: {
@@ -143,30 +123,26 @@ export class PostService {
     };
   }
 
-  async findPostByIdWithComments(postId: number) {
-    const post = await this.prisma.post.findUnique({
-      where: { id: postId },
-      include: { comments: true },
-    });
-
-    if (!post) {
-      throw new NotFoundException(`Post with ID ${postId} not found.`);
-    }
-
-    return post;
+  async findPostByIdWithComments(postId: number): Promise<PrismaPost> {
+    return this.findPostOrThrow(postId).then((post) =>
+      this.prisma.post.findUnique({
+        where: { id: postId },
+        include: { comments: true },
+      }),
+    );
   }
 
   async assignCategoryToPost(
     postId: number,
     categoryId: number,
-  ): Promise<Post> {
+  ): Promise<PrismaPost> {
     return this.prisma.post.update({
       where: { id: postId },
       data: { categoryId },
     });
   }
 
-  async filterPostsByCategory(categoryId: number): Promise<Post[]> {
+  async filterPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: { categoryId },
       include: { author: true, comments: true },

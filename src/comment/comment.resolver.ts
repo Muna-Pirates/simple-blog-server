@@ -58,13 +58,13 @@ export class CommentResolver {
     return comment;
   }
 
-  @Query(() => [Comment], { name: 'listComments' })
-  async listComments(@Args('postId', { type: () => Int }) postId: number) {
-    const post = await this.postService.findPostByIdWithComments(postId);
-    this.throwIfNotFound(post, 'Post', postId);
+  // @Query(() => [Comment], { name: 'listComments' })
+  // async listComments(@Args('postId', { type: () => Int }) postId: number) {
+  //   const post = await this.postService.findPostByIdWithComments(postId);
+  //   this.throwIfNotFound(post, 'Post', postId);
 
-    return post.comments;
-  }
+  //   return post.comments;
+  // }
 
   @Mutation(() => Comment)
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
