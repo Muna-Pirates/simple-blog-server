@@ -1,4 +1,4 @@
-import { UseGuards } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { PostService } from './post.service';
@@ -12,10 +12,14 @@ import { Prisma } from '@prisma/client';
 import { PostSearchInput } from './dto/post-search.input';
 import { PaginationInput } from './dto/pagination.input';
 import { PostPaginationResult } from './types/post-pagination-result.types';
+import { UserService } from 'src/user/user.service';
 
 @Resolver(() => Post)
 export class PostResolver {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly userService: UserService,
+  ) {}
 
   @Mutation(() => Post)
   @UseGuards(GqlAuthGuard)
@@ -51,9 +55,11 @@ export class PostResolver {
     @Args('updateData') updateData: UpdatePostInput,
     @CurrentUser() currentUser: User,
   ) {
+    const user = await this.userService.findById(currentUser.id);
+
     return this.postService.updatePostWithAuthorization(postId, updateData, {
-      id: currentUser.id,
-      roleId: currentUser.roleId,
+      id: user.id,
+      roleId: user.roleId,
     });
   }
 
@@ -61,8 +67,10 @@ export class PostResolver {
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async deletePost(
     @Args('postId', { type: () => Int }) postId: number,
-    @CurrentUser() user: User,
+    @CurrentUser() currentUser: User,
   ) {
+    const user = await this.userService.findById(currentUser.id);
+
     return this.postService.deletePostWithAuthorization(postId, {
       id: user.id,
       roleId: user.roleId,

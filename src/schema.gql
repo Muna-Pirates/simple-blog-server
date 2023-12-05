@@ -2,25 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type User {
-  id: Int!
-  email: String!
-  name: String
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  roleId: Int!
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
-type AuthPayload {
-  user: User!
-  token: String!
-}
-
 type Category {
   id: Int!
   name: String!
@@ -38,6 +19,11 @@ type Comment {
   updatedAt: DateTime!
 }
 
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Post {
   id: ID!
   title: String!
@@ -49,6 +35,28 @@ type Post {
   categories: Category
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+type User {
+  id: Int!
+  email: String!
+  name: String
+  role: Role!
+  posts: [Post!]!
+  comments: [Comment!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Role {
+  id: Int!
+  name: String!
+  users: [User]
+}
+
+type AuthPayload {
+  user: User!
+  token: String!
 }
 
 type PaginationInfo {

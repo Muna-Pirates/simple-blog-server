@@ -1,6 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Post } from 'src/post/types/post.types';
 import { Role } from 'src/role/entities/role.entity';
+import { Comment } from 'src/comment/types/comment.types';
 
 @ObjectType()
 export class User {

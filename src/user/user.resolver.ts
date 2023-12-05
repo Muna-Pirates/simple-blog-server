@@ -27,7 +27,7 @@ export class UserResolver {
   @Mutation(() => User)
   async registerUser(
     @Args('createUserInput') createUserInput: CreateUserInput,
-  ): Promise<User> {
+  ) {
     const { email, password, name, roleId } = createUserInput;
 
     return await this.userService.create({
@@ -39,9 +39,7 @@ export class UserResolver {
   }
 
   @Mutation(() => AuthPayload)
-  async loginUser(
-    @Args('credentials') credentials: LoginInput,
-  ): Promise<AuthPayload> {
+  async loginUser(@Args('credentials') credentials: LoginInput) {
     const user = await this.authService.validateUser(
       credentials.email,
       credentials.password,
@@ -57,9 +55,7 @@ export class UserResolver {
 
   @Query(() => User, { nullable: true })
   @UseGuards(GqlAuthGuard)
-  async viewUserProfile(
-    @CurrentUser() currentUser: User,
-  ): Promise<User | null> {
+  async viewUserProfile(@CurrentUser() currentUser: User) {
     return this.ensureUserExists(currentUser.id);
   }
 
@@ -68,7 +64,7 @@ export class UserResolver {
   async updateUserProfile(
     @CurrentUser() currentUser: User,
     @Args('updateData') updateData: UpdateUserInput,
-  ): Promise<User> {
+  ) {
     const user = await this.ensureUserExists(currentUser.id);
     this.authorizeUserAction(user.id, updateData.id, user.roleId);
 
@@ -80,14 +76,14 @@ export class UserResolver {
   async deleteUser(
     @CurrentUser() currentUser: User,
     @Args('id', { type: () => Int }) id: number,
-  ): Promise<User> {
+  ) {
     const user = await this.ensureUserExists(currentUser.id);
     this.authorizeUserAction(user.id, id, user.roleId);
 
     return this.userService.delete(id);
   }
 
-  private async ensureUserExists(userId: number): Promise<User> {
+  private async ensureUserExists(userId: number) {
     const user = await this.userService.findById(userId);
     if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
     return user;
