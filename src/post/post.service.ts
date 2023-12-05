@@ -123,7 +123,7 @@ export class PostService {
     };
   }
 
-  async findPostByIdWithComments(postId: number): Promise<PrismaPost> {
+  async findPostByIdWithComments(postId: number) {
     return this.findPostOrThrow(postId).then((post) =>
       this.prisma.post.findUnique({
         where: { id: postId },
