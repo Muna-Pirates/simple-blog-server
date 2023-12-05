@@ -1,15 +1,15 @@
-import { Field, ObjectType, Int } from '@nestjs/graphql';
+import { Field, ObjectType, ID } from '@nestjs/graphql';
 import { User } from 'src/user/types/user.types';
 
 @ObjectType()
 export class Role {
-  @Field(() => Int)
+  @Field(() => ID)
   id: number;
 
   @Field()
   name: string;
 
-  @Field(() => [User], { nullable: 'itemsAndList' })
+  @Field(() => [User])
   users: User[];
 }
 

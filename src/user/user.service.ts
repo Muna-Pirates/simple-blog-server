@@ -1,9 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
-import { CustomGraphQLError } from 'src/common/errors/error-handler';
 
 @Injectable()
 export class UserService {
@@ -16,7 +20,7 @@ export class UserService {
       return await this.prisma.user.findUnique({ where: { email } });
     } catch (error) {
       this.logger.error(`Error finding user by email: ${email}`, error.stack);
-      throw error;
+      throw new InternalServerErrorException('Error finding user by email');
     }
   }
 
@@ -26,23 +30,9 @@ export class UserService {
 
     try {
       if (data.role && data.role.connect && data.role.connect.id) {
-        roleRecord = await this.prisma.role.findUnique({
-          where: { id: data.role.connect.id },
-        });
-
-        if (!roleRecord) {
-          throw new Error(`Role with ID ${data.role.connect.id} not found.`);
-        }
+        roleRecord = await this.getRole(data.role.connect.id);
       } else {
-        roleRecord = await this.prisma.role.findUnique({
-          where: { id: RoleType.USER },
-        });
-
-        if (!roleRecord) {
-          throw new Error('Default user role not found.');
-        }
-
-        data.role = { connect: { id: RoleType.USER } };
+        roleRecord = await this.getDefaultRole();
       }
 
       return await this.prisma.user.create({
@@ -50,16 +40,20 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
-      throw error;
+      throw new InternalServerErrorException('Error creating user');
     }
   }
 
   async findById(id: number): Promise<User | null> {
     try {
-      return await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found.`);
+      }
+      return user;
     } catch (error) {
       this.logger.error(`Error finding user by ID: ${id}`, error.stack);
-      throw error;
+      throw new InternalServerErrorException(`Error finding user by ID`);
     }
   }
 
@@ -71,7 +65,7 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error(`Error updating user with ID: ${id}`, error.stack);
-      throw error;
+      throw new InternalServerErrorException(`Error updating user`);
     }
   }
 
@@ -80,7 +74,31 @@ export class UserService {
       return await this.prisma.user.delete({ where: { id } });
     } catch (error) {
       this.logger.error(`Error deleting user with ID: ${id}`, error.stack);
-      throw error;
+      throw new InternalServerErrorException(`Error deleting user`);
     }
+  }
+
+  private async getRole(roleId: number) {
+    const roleRecord = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!roleRecord) {
+      throw new NotFoundException(`Role with ID ${roleId} not found.`);
+    }
+
+    return roleRecord;
+  }
+
+  private async getDefaultRole() {
+    const roleRecord = await this.prisma.role.findUnique({
+      where: { id: RoleType.USER },
+    });
+
+    if (!roleRecord) {
+      throw new Error('Default user role not found.');
+    }
+
+    return roleRecord;
   }
 }

@@ -49,9 +49,9 @@ type User {
 }
 
 type Role {
-  id: Int!
+  id: ID!
   name: String!
-  users: [User]
+  users: [User!]!
 }
 
 type AuthPayload {
