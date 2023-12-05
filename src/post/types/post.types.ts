@@ -20,7 +20,7 @@ export class Post {
   @Field(() => User)
   author: User;
 
-  @Field(() => [Comment])
+  @Field(() => [Comment], { nullable: 'itemsAndList' }) // Lazy loading for relations
   comments: Comment[];
 
   @Field(() => Int, { nullable: true })

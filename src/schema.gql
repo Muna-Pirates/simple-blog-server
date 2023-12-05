@@ -30,7 +30,7 @@ type Post {
   content: String!
   authorId: Int!
   author: User!
-  comments: [Comment!]!
+  comments: [Comment]
   categoryId: Int
   categories: Category
   createdAt: DateTime!
