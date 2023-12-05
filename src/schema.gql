@@ -39,13 +39,14 @@ type Comment {
 }
 
 type Post {
-  id: Int!
+  id: ID!
   title: String!
   content: String!
-  author: User!
   authorId: Int!
-  comments: [Comment]
-  category: Category
+  author: User!
+  comments: [Comment!]!
+  categoryId: Int
+  categories: Category
   createdAt: DateTime!
   updatedAt: DateTime!
 }

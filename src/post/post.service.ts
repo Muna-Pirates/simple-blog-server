@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Category, Post, Prisma } from '@prisma/client';
+import { Post, Prisma } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
 import { PaginationInput } from './dto/pagination.input';
-import { PostPaginationResult } from './types/post-pagination-result.types';
 
 @Injectable()
 export class PostService {
