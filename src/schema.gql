@@ -3,17 +3,17 @@
 # ------------------------------------------------------
 
 type Category {
-  id: Int!
+  id: ID!
   name: String!
-  posts: [Post]
+  posts: [Post!]
 }
 
 type Comment {
-  id: ID!
+  id: Int!
   content: String!
   authorId: Int!
-  postId: Int!
   author: User!
+  postId: Int!
   post: Post!
   createdAt: DateTime!
   updatedAt: DateTime!
