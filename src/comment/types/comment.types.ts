@@ -4,7 +4,7 @@ import { User } from 'src/user/types/user.types';
 
 @ObjectType()
 export class Comment {
-  @Field(() => Int)
+  @Field(() => ID)
   id: number;
 
   @Field()
@@ -13,11 +13,11 @@ export class Comment {
   @Field(() => Int)
   authorId: number;
 
-  @Field(() => User)
-  author: User;
-
   @Field(() => Int)
   postId: number;
+
+  @Field(() => User)
+  author: User;
 
   @Field(() => Post)
   post: Post;
