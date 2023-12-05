@@ -45,13 +45,14 @@ export class PostService {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
-    const posts = await this.prisma.post.findMany({
-      skip,
-      take: pageSize,
-      include: { author: true },
-    });
-
-    const totalItems = await this.prisma.post.count();
+    const [posts, totalItems] = await Promise.all([
+      this.prisma.post.findMany({
+        skip,
+        take: pageSize,
+        include: { author: true },
+      }),
+      this.prisma.post.count(),
+    ]);
 
     return {
       posts,
@@ -104,14 +105,15 @@ export class PostService {
       authorId: authorId || undefined,
     };
 
-    const posts = await this.prisma.post.findMany({
-      where: whereClause,
-      skip,
-      take: pageSize,
-      include: { author: true },
-    });
-
-    const totalItems = await this.prisma.post.count({ where: whereClause });
+    const [posts, totalItems] = await Promise.all([
+      this.prisma.post.findMany({
+        where: whereClause,
+        skip,
+        take: pageSize,
+        include: { author: true },
+      }),
+      this.prisma.post.count({ where: whereClause }),
+    ]);
 
     return {
       posts,
