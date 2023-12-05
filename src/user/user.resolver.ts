@@ -28,14 +28,12 @@ export class UserResolver {
   async registerUser(
     @Args('createUserInput') createUserInput: CreateUserInput,
   ) {
-    const { email, password, name, roleId } = createUserInput;
+    const userCreateInput = {
+      ...createUserInput,
+      role: { connect: { id: createUserInput.roleId || RoleType.USER } },
+    };
 
-    return await this.userService.create({
-      email,
-      password,
-      name,
-      role: { connect: { id: roleId || RoleType.USER } },
-    });
+    return this.userService.create(userCreateInput);
   }
 
   @Mutation(() => AuthPayload)
@@ -44,19 +42,14 @@ export class UserResolver {
       credentials.email,
       credentials.password,
     );
-
-    if (!user) {
-      throw new NotFoundException('Invalid credentials');
-    }
-
-    const token = this.authService.generateJwtToken(user);
-    return { user, token };
+    if (!user) throw new NotFoundException('Invalid credentials');
+    return { user, token: this.authService.generateJwtToken(user) };
   }
 
   @Query(() => User, { nullable: true })
   @UseGuards(GqlAuthGuard)
   async viewUserProfile(@CurrentUser() currentUser: User) {
-    return this.ensureUserExists(currentUser.id);
+    return this.userService.findById(currentUser.id);
   }
 
   @Mutation(() => User)
@@ -65,9 +58,7 @@ export class UserResolver {
     @CurrentUser() currentUser: User,
     @Args('updateData') updateData: UpdateUserInput,
   ) {
-    const user = await this.ensureUserExists(currentUser.id);
-    this.authorizeUserAction(user.id, updateData.id, user.roleId);
-
+    this.authorizeUserAction(currentUser, updateData.id);
     return this.userService.update(updateData.id, updateData);
   }
 
@@ -77,24 +68,15 @@ export class UserResolver {
     @CurrentUser() currentUser: User,
     @Args('id', { type: () => Int }) id: number,
   ) {
-    const user = await this.ensureUserExists(currentUser.id);
-    this.authorizeUserAction(user.id, id, user.roleId);
-
+    this.authorizeUserAction(currentUser, id);
     return this.userService.delete(id);
   }
 
-  private async ensureUserExists(userId: number) {
-    const user = await this.userService.findById(userId);
-    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
-    return user;
-  }
-
-  private authorizeUserAction(
-    currentUserId: number,
-    targetUserId: number,
-    currentRole: number,
-  ): void {
-    if (currentUserId !== targetUserId && currentRole !== RoleType.ADMIN) {
+  private authorizeUserAction(currentUser: User, targetUserId: number): void {
+    if (
+      currentUser.id !== targetUserId &&
+      currentUser.role.id !== RoleType.ADMIN
+    ) {
       throw new ForbiddenException('Unauthorized access');
     }
   }
