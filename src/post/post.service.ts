@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { Post, Prisma } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
@@ -9,6 +13,24 @@ import { PaginationInput } from './dto/pagination.input';
 @Injectable()
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async findPostOrThrow(postId: number): Promise<Post> {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Post with ID ${postId} not found.`);
+    }
+
+    return post;
+  }
+
+  private checkAuthorization(post: Post, userId: number, roleId: number) {
+    if (post.authorId !== userId && roleId !== RoleType.ADMIN) {
+      throw new UnauthorizedException('Unauthorized action on this post');
+    }
+  }
 
   async createPostWithAuthor(
     createPostInput: Prisma.PostCreateInput,
@@ -30,9 +52,7 @@ export class PostService {
     const posts = await this.prisma.post.findMany({
       skip,
       take: pageSize,
-      include: {
-        author: true,
-      },
+      include: { author: true },
     });
 
     const totalItems = await this.prisma.post.count();
@@ -44,8 +64,8 @@ export class PostService {
     return {
       posts,
       pagination: {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
+        page,
+        pageSize,
         totalItems,
       },
     };
@@ -68,11 +88,8 @@ export class PostService {
     updateData: UpdatePostInput,
     user: { id: number; roleId: number },
   ): Promise<Post> {
-    const post = await this.findOneById(postId);
-
-    if (post.authorId !== user.id && user.roleId !== RoleType.ADMIN) {
-      throw new Error('Unauthorized to update this post');
-    }
+    const post = await this.findPostOrThrow(postId);
+    this.checkAuthorization(post, user.id, user.roleId);
 
     return this.prisma.post.update({
       where: { id: postId },
@@ -84,17 +101,12 @@ export class PostService {
     postId: number,
     user: { id: number; roleId: number },
   ): Promise<Post> {
-    const post = await this.findOneById(postId);
+    const post = await this.findPostOrThrow(postId);
+    this.checkAuthorization(post, user.id, user.roleId);
 
-    if (post.authorId !== user.id && user.roleId !== RoleType.ADMIN) {
-      throw new Error('Unauthorized to delete this post');
-    }
-
-    await this.prisma.post.delete({
+    return this.prisma.post.delete({
       where: { id: postId },
     });
-
-    return post;
   }
 
   async searchPosts(criteria: PostSearchInput, pagination: PaginationInput) {
@@ -102,23 +114,20 @@ export class PostService {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
+    const whereClause = {
+      title: title ? { contains: title } : undefined,
+      content: content ? { contains: content } : undefined,
+      authorId: authorId || undefined,
+    };
+
     const posts = await this.prisma.post.findMany({
-      where: {
-        title: title ? { contains: title } : undefined,
-        content: content ? { contains: content } : undefined,
-        authorId: authorId || undefined,
-      },
+      where: whereClause,
       skip,
       take: pageSize,
+      include: { author: true },
     });
 
-    const totalItems = await this.prisma.post.count({
-      where: {
-        title: title ? { contains: title } : undefined,
-        content: content ? { contains: content } : undefined,
-        authorId: authorId || undefined,
-      },
-    });
+    const totalItems = await this.prisma.post.count({ where: whereClause });
 
     if (posts.length === 0) {
       throw new NotFoundException('No posts found');
@@ -127,8 +136,8 @@ export class PostService {
     return {
       posts,
       pagination: {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
+        page,
+        pageSize,
         totalItems,
       },
     };
@@ -153,21 +162,14 @@ export class PostService {
   ): Promise<Post> {
     return this.prisma.post.update({
       where: { id: postId },
-      data: {
-        categoryId: categoryId,
-      },
+      data: { categoryId },
     });
   }
 
   async filterPostsByCategory(categoryId: number): Promise<Post[]> {
     return this.prisma.post.findMany({
-      where: {
-        categoryId: categoryId,
-      },
-      include: {
-        author: true,
-        comments: true,
-      },
+      where: { categoryId },
+      include: { author: true, comments: true },
     });
   }
 }
