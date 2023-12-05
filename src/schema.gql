@@ -9,11 +9,11 @@ type Category {
 }
 
 type Comment {
-  id: Int!
+  id: ID!
   content: String!
   authorId: Int!
-  author: User!
   postId: Int!
+  author: User!
   post: Post!
   createdAt: DateTime!
   updatedAt: DateTime!
