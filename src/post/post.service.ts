@@ -31,6 +31,9 @@ export class PostService {
     const posts = await this.prisma.post.findMany({
       skip,
       take: pageSize,
+      include: {
+        author: true,
+      },
     });
 
     const totalItems = await this.prisma.post.count();
