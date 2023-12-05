@@ -17,10 +17,12 @@ model User {
   password  String
   roleId    Int
   role      Role      @relation(fields: [roleId], references: [id])
-  posts     Post[]
-  comments  Comment[]
+  posts     Post[]    // Use lazy loading for relations in large-scale apps
+  comments  Comment[] // Use lazy loading for relations in large-scale apps
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([roleId], name: "idx_user_roleId") // Indexing for faster queries on foreign keys
 }
 
 model Post {
@@ -29,11 +31,13 @@ model Post {
   content    String
   authorId   Int
   author     User      @relation(fields: [authorId], references: [id])
-  comments   Comment[]
+  comments   Comment[] // Use lazy loading for relations
   categoryId Int?
   categories Category? @relation(fields: [categoryId], references: [id])
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
+  @@index([authorId, categoryId], name: "idx_post_authorId_categoryId") // Indexing for faster queries
 }
 
 model Comment {
@@ -45,7 +49,10 @@ model Comment {
   post      Post     @relation(fields: [postId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([authorId, postId], name: "idx_comment_authorId_postId") // Indexing for faster queries
 }
+
 
 model Category {
   id       Int    @id @default(autoincrement())
