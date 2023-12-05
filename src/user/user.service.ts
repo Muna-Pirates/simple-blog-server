@@ -36,7 +36,11 @@ export class UserService {
       }
 
       return await this.prisma.user.create({
-        data: { ...data, password: hashedPassword },
+        data: {
+          ...data,
+          password: hashedPassword,
+          role: { connect: { id: roleRecord.id } },
+        },
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
