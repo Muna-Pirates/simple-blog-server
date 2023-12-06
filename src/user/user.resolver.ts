@@ -28,12 +28,19 @@ export class UserResolver {
   async registerUser(
     @Args('createUserInput') createUserInput: CreateUserInput,
   ) {
+    const roleToAttach = createUserInput.roleId
+      ? await this.userService.getRole(createUserInput.roleId)
+      : await this.userService.getDefaultRole();
+
+    if (!roleToAttach) {
+      throw new NotFoundException('Role not found.');
+    }
+
     const userCreateInput = {
       ...createUserInput,
-      role: { connect: { id: createUserInput.roleId || RoleType.USER } },
+      password: createUserInput.password,
+      role: { connect: { id: roleToAttach.id } },
     };
-
-    delete userCreateInput.roleId;
 
     return this.userService.create(userCreateInput);
   }

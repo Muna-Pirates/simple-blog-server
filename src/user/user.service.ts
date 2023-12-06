@@ -31,24 +31,28 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     try {
-      const roleRecord =
-        data.role && data.role.connect && data.role.connect.id
-          ? await this.getRole(data.role.connect.id)
-          : await this.getDefaultRole();
+      const userData = {
+        ...data,
+        password: hashedPassword,
+      };
 
-      if (!roleRecord) {
-        throw new Error('Role not found');
+      if ('roleId' in userData) {
+        delete userData['roleId'];
       }
 
       return await this.prisma.user.create({
-        data: {
-          ...data,
-          password: hashedPassword,
-          role: { connect: { id: roleRecord.id } },
-        },
+        data: userData,
+        include: { role: true },
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
+
+      if (error.code === 'P2002') {
+        throw new InternalServerErrorException(
+          'Email already exists. Please use another email.',
+        );
+      }
+
       throw new InternalServerErrorException('Error creating user');
     }
   }
@@ -88,7 +92,7 @@ export class UserService {
     }
   }
 
-  private async getRole(roleId: number) {
+  async getRole(roleId: number) {
     const roleRecord = await this.prisma.role.findUnique({
       where: { id: roleId },
     });
@@ -100,7 +104,7 @@ export class UserService {
     return roleRecord;
   }
 
-  private async getDefaultRole() {
+  async getDefaultRole() {
     const roleRecord = await this.prisma.role.findUnique({
       where: { id: RoleType.USER },
     });
