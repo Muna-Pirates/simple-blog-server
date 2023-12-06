@@ -17,6 +17,7 @@ export class PostService {
   private async findPostOrThrow(postId: number): Promise<PrismaPost> {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
+      include: { author: true },
     });
 
     if (!post) {
