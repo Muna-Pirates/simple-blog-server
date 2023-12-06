@@ -13,8 +13,21 @@ export class AuthService {
       where: { email },
       include: {
         role: true,
-        posts: true,
-        comments: true,
+        posts: {
+          include: {
+            author: true,
+            comments: {
+              include: {
+                author: true,
+              },
+            },
+          },
+        },
+        comments: {
+          include: {
+            post: true,
+          },
+        },
       },
     });
 
