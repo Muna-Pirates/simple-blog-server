@@ -59,6 +59,7 @@ export class PostService {
               author: true,
             },
           },
+          categories: true,
         },
       }),
       this.prisma.post.count(),
@@ -127,6 +128,7 @@ export class PostService {
               author: true,
             },
           },
+          categories: true,
         },
       }),
       this.prisma.post.count({ where: whereClause }),
@@ -149,6 +151,15 @@ export class PostService {
     return this.prisma.post.update({
       where: { id: postId },
       data: { categoryId },
+      include: {
+        author: true,
+        comments: {
+          include: {
+            author: true,
+          },
+        },
+        categories: true,
+      },
     });
   }
 
