@@ -33,6 +33,8 @@ export class UserResolver {
       role: { connect: { id: createUserInput.roleId || RoleType.USER } },
     };
 
+    delete userCreateInput.roleId;
+
     return this.userService.create(userCreateInput);
   }
 

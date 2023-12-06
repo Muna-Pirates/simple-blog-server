@@ -29,7 +29,6 @@ export class UserService {
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    let roleRecord;
 
     try {
       const roleRecord =
