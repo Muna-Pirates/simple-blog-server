@@ -17,7 +17,6 @@ import { Comment } from './types/comment.types';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { UpdateCommentInput } from './dto/update-comment.input';
 import { RoleType } from 'src/role/entities/role.entity';
-import { PubSub } from 'graphql-subscriptions';
 import { PubSubService } from 'src/common/pubsub.service';
 
 @Resolver()
