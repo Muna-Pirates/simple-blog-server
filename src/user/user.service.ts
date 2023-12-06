@@ -17,7 +17,10 @@ export class UserService {
 
   async findByEmail(email: string): Promise<User | null> {
     try {
-      return await this.prisma.user.findUnique({ where: { email } });
+      return await this.prisma.user.findUnique({
+        where: { email },
+        include: { role: true },
+      });
     } catch (error) {
       this.logger.error(`Error finding user by email: ${email}`, error.stack);
       throw new InternalServerErrorException('Error finding user by email');
@@ -29,11 +32,10 @@ export class UserService {
     let roleRecord;
 
     try {
-      if (data.role && data.role.connect && data.role.connect.id) {
-        roleRecord = await this.getRole(data.role.connect.id);
-      } else {
-        roleRecord = await this.getDefaultRole();
-      }
+      const roleRecord =
+        data.role && data.role.connect && data.role.connect.id
+          ? await this.getRole(data.role.connect.id)
+          : await this.getDefaultRole();
 
       return await this.prisma.user.create({
         data: {
@@ -66,6 +68,7 @@ export class UserService {
       return await this.prisma.user.update({
         where: { id },
         data,
+        include: { role: true },
       });
     } catch (error) {
       this.logger.error(`Error updating user with ID: ${id}`, error.stack);
