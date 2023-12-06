@@ -32,9 +32,10 @@ export class UserService {
 
     try {
       const roleRecord =
-        data.role && data.role.connect
+        data.role && data.role.connect && data.role.connect.id
           ? await this.getRole(data.role.connect.id)
           : await this.getDefaultRole();
+
       if (!roleRecord) {
         throw new Error('Role not found');
       }
