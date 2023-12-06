@@ -21,7 +21,7 @@ export class PostResolver {
     private readonly userService: UserService,
   ) {}
 
-  @Mutation(() => Post)
+  @Mutation(() => Post, { description: '새로운 포스트를 생성합니다.' })
   @UseGuards(GqlAuthGuard)
   async createPost(
     @Args('createPostInput') createPostInput: CreatePostInput,
@@ -35,7 +35,9 @@ export class PostResolver {
     return this.postService.createPostWithAuthor(prismaPostInput);
   }
 
-  @Query(() => PostPaginationResult)
+  @Query(() => PostPaginationResult, {
+    description: '포스트 목록을 페이징하여 반환합니다.',
+  })
   async listPosts(
     @Args('pagination', { type: () => PaginationInput })
     pagination: PaginationInput,
@@ -43,12 +45,15 @@ export class PostResolver {
     return this.postService.findAll(pagination);
   }
 
-  @Query(() => Post, { name: 'viewPost' })
+  @Query(() => Post, {
+    name: 'viewPost',
+    description: '특정 ID의 포스트를 조회합니다.',
+  })
   async viewPost(@Args('id', { type: () => Int }) postId: number) {
     return this.postService.findOneById(postId);
   }
 
-  @Mutation(() => Post)
+  @Mutation(() => Post, { description: '기존 포스트를 업데이트합니다.' })
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async updatePost(
     @Args('postId', { type: () => Int }) postId: number,
@@ -63,7 +68,7 @@ export class PostResolver {
     });
   }
 
-  @Mutation(() => Post)
+  @Mutation(() => Post, { description: '특정 포스트를 삭제합니다.' })
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async deletePost(
     @Args('postId', { type: () => Int }) postId: number,
@@ -77,7 +82,9 @@ export class PostResolver {
     });
   }
 
-  @Query(() => PostPaginationResult)
+  @Query(() => PostPaginationResult, {
+    description: '주어진 검색 조건에 따라 포스트를 검색합니다.',
+  })
   async searchPosts(
     @Args('searchCriteria') searchCriteria: PostSearchInput,
     @Args('pagination', { type: () => PaginationInput })
@@ -86,7 +93,7 @@ export class PostResolver {
     return this.postService.searchPosts(searchCriteria, pagination);
   }
 
-  @Mutation(() => Post)
+  @Mutation(() => Post, { description: '포스트에 카테고리를 할당합니다.' })
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async assignCategoryToPost(
     @Args('postId', { type: () => Int }) postId: number,
@@ -95,7 +102,9 @@ export class PostResolver {
     return this.postService.assignCategoryToPost(postId, categoryId);
   }
 
-  @Query(() => [Post])
+  @Query(() => [Post], {
+    description: '특정 카테고리에 속하는 포스트를 필터링합니다.',
+  })
   async filterPostsByCategory(
     @Args('categoryId', { type: () => Int }) categoryId: number,
   ) {

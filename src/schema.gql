@@ -72,9 +72,17 @@ type PostPaginationResult {
 
 type Query {
   viewUserProfile: User
+
+  """포스트 목록을 페이징하여 반환합니다."""
   listPosts(pagination: PaginationInput!): PostPaginationResult!
+
+  """특정 ID의 포스트를 조회합니다."""
   viewPost(id: Int!): Post!
+
+  """주어진 검색 조건에 따라 포스트를 검색합니다."""
   searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): PostPaginationResult!
+
+  """특정 카테고리에 속하는 포스트를 필터링합니다."""
   filterPostsByCategory(categoryId: Int!): [Post!]!
   listComments(postId: Int!): [Comment!]!
 }
@@ -95,9 +103,17 @@ type Mutation {
   loginUser(credentials: LoginInput!): AuthPayload!
   updateUserProfile(updateData: UpdateUserInput!): User!
   deleteUser(id: Int!): User!
+
+  """새로운 포스트를 생성합니다."""
   createPost(createPostInput: CreatePostInput!): Post!
+
+  """기존 포스트를 업데이트합니다."""
   updatePost(postId: Int!, updateData: UpdatePostInput!): Post!
+
+  """특정 포스트를 삭제합니다."""
   deletePost(postId: Int!): Post!
+
+  """포스트에 카테고리를 할당합니다."""
   assignCategoryToPost(postId: Int!, categoryId: Int!): Post!
   addComment(createCommentInput: CreateCommentInput!): Comment!
   updateComment(updateCommentInput: UpdateCommentInput!): Comment!
