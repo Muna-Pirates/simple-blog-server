@@ -28,9 +28,13 @@ export class UserResolver {
   async registerUser(
     @Args('createUserInput') createUserInput: CreateUserInput,
   ) {
+    const roleToConnect = createUserInput.roleId
+      ? { connect: { id: createUserInput.roleId } }
+      : { connect: { id: RoleType.USER } };
+
     const userCreateInput = {
       ...createUserInput,
-      role: { connect: { id: createUserInput.roleId || RoleType.USER } },
+      role: roleToConnect,
     };
 
     delete userCreateInput.roleId;

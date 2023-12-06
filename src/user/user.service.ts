@@ -32,9 +32,12 @@ export class UserService {
 
     try {
       const roleRecord =
-        data.role && data.role.connect && data.role.connect.id
+        data.role && data.role.connect
           ? await this.getRole(data.role.connect.id)
           : await this.getDefaultRole();
+      if (!roleRecord) {
+        throw new Error('Role not found');
+      }
 
       return await this.prisma.user.create({
         data: {
