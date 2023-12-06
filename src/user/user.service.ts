@@ -45,7 +45,7 @@ export class UserService {
 
       return await this.prisma.user.create({
         data: userData,
-        include: { role: true, posts: true, comments: true },
+        include: { role: true },
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
@@ -63,7 +63,10 @@ export class UserService {
 
   async findById(id: number): Promise<User | null> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: { role: true },
+      });
       if (!user) {
         throw new NotFoundException(`User with ID ${id} not found.`);
       }
@@ -84,7 +87,7 @@ export class UserService {
             ? { connect: { id: data.role.connect.id } }
             : undefined,
         },
-        include: { role: true, posts: true, comments: true },
+        include: { role: true },
       });
     } catch (error) {
       this.logger.error(`Error updating user with ID: ${id}`, error.stack);
