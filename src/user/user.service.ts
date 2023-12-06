@@ -79,6 +79,13 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error(`Error updating user with ID: ${id}`, error.stack);
+
+      if (error.code === 'P2002') {
+        throw new InternalServerErrorException(
+          'Email already exists. Please use another email.',
+        );
+      }
+
       throw new InternalServerErrorException(`Error updating user`);
     }
   }
