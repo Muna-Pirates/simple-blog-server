@@ -33,10 +33,13 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     try {
       const userData: Prisma.UserCreateInput = {
-        ...data,
+        email: data.email,
         password: hashedPassword,
+        name: data.name,
         role: {
-          connect: { id: data.role?.connect?.id || RoleType.USER },
+          connect: data.role
+            ? { id: data.role.connect?.id || RoleType.USER }
+            : undefined,
         },
       };
 
@@ -46,7 +49,6 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
-      // Error handling improved for clarity
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
