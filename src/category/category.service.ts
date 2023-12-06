@@ -17,6 +17,9 @@ export class CategoryService {
         data: {
           name: createCategoryInput.name,
         },
+        include: {
+          posts: true,
+        },
       });
 
       return category;
