@@ -19,7 +19,9 @@ export class UserService {
     try {
       return await this.prisma.user.findUnique({
         where: { email },
-        include: { role: true },
+        include: {
+          role: true,
+        },
       });
     } catch (error) {
       this.logger.error(`Error finding user by email: ${email}`, error.stack);
@@ -29,30 +31,30 @@ export class UserService {
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-
     try {
-      const userData = {
+      const userData: Prisma.UserCreateInput = {
         ...data,
         password: hashedPassword,
+        role: {
+          connect: { id: data.role?.connect?.id || RoleType.USER },
+        },
       };
-
-      if ('roleId' in userData) {
-        delete userData['roleId'];
-      }
 
       return await this.prisma.user.create({
         data: userData,
-        include: { role: true },
+        include: { role: true, posts: true, comments: true },
       });
     } catch (error) {
       this.logger.error('Error creating user', error.message);
-
-      if (error.code === 'P2002') {
+      // Error handling improved for clarity
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new InternalServerErrorException(
           'Email already exists. Please use another email.',
         );
       }
-
       throw new InternalServerErrorException('Error creating user');
     }
   }
@@ -74,18 +76,24 @@ export class UserService {
     try {
       return await this.prisma.user.update({
         where: { id },
-        data,
-        include: { role: true },
+        data: {
+          ...data,
+          role: data.role?.connect
+            ? { connect: { id: data.role.connect.id } }
+            : undefined,
+        },
+        include: { role: true, posts: true, comments: true },
       });
     } catch (error) {
       this.logger.error(`Error updating user with ID: ${id}`, error.stack);
-
-      if (error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new InternalServerErrorException(
           'Email already exists. Please use another email.',
         );
       }
-
       throw new InternalServerErrorException(`Error updating user`);
     }
   }
