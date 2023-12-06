@@ -24,16 +24,36 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+"""게시글을 나타내는 객체"""
 type Post {
+  """게시글의 고유 식별자"""
   id: ID!
+
+  """게시글의 제목"""
   title: String!
+
+  """게시글의 내용"""
   content: String!
+
+  """게시글 작성자의 ID"""
   authorId: Int!
+
+  """게시글의 작성자 정보"""
   author: User!
+
+  """게시글에 달린 댓글들"""
   comments: [Comment]
+
+  """게시글의 카테고리 ID (없을 수 있음)"""
   categoryId: Int
+
+  """게시글의 카테고리 정보 (없을 수 있음)"""
   categories: Category
+
+  """게시글이 생성된 날짜 및 시간"""
   createdAt: DateTime!
+
+  """게시글이 마지막으로 업데이트된 날짜 및 시간"""
   updatedAt: DateTime!
 }
 
