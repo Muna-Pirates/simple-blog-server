@@ -9,13 +9,18 @@ export class AuthService {
   constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: true,
+        posts: true,
+        comments: true,
+      },
+    });
 
     if (user && (await this.verifyPassword(password, user.password))) {
       return user;
     }
-
-    return null;
   }
 
   private async verifyPassword(
