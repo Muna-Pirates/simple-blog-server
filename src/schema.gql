@@ -76,6 +76,7 @@ type Query {
   viewPost(id: Int!): Post!
   searchPosts(searchCriteria: PostSearchInput!, pagination: PaginationInput!): PostPaginationResult!
   filterPostsByCategory(categoryId: Int!): [Post!]!
+  listComments(postId: Int!): [Comment!]!
 }
 
 input PaginationInput {

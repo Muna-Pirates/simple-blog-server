@@ -37,4 +37,11 @@ export class CommentService {
     await this.fetchComment(commentId);
     return this.prisma.comment.delete({ where: { id: commentId } });
   }
+
+  async listCommentsByPostId(postId: number): Promise<Comment[]> {
+    return this.prisma.comment.findMany({
+      where: { postId },
+      include: { author: true, post: true },
+    });
+  }
 }
