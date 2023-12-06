@@ -9,7 +9,10 @@ export class CommentService {
   private async fetchComment(id: number): Promise<Comment> {
     const comment = await this.prisma.comment.findUnique({
       where: { id },
-      include: { author: true, post: true },
+      include: {
+        author: true,
+        post: true,
+      },
     });
 
     if (!comment) {
@@ -25,7 +28,10 @@ export class CommentService {
     try {
       return await this.prisma.comment.create({
         data: createCommentInput,
-        include: { author: true, post: true },
+        include: {
+          author: true,
+          post: true,
+        },
       });
     } catch (error) {
       throw new Error('Failed to create comment');
@@ -41,7 +47,10 @@ export class CommentService {
     return this.prisma.comment.update({
       where: { id },
       data: updateData,
-      include: { author: true, post: true },
+      include: {
+        author: true,
+        post: true,
+      },
     });
   }
 
@@ -49,14 +58,20 @@ export class CommentService {
     await this.fetchComment(commentId);
     return this.prisma.comment.delete({
       where: { id: commentId },
-      include: { author: true, post: true },
+      include: {
+        author: true,
+        post: true,
+      },
     });
   }
 
   async listCommentsByPostId(postId: number): Promise<Comment[]> {
     return this.prisma.comment.findMany({
       where: { postId },
-      include: { author: true, post: true },
+      include: {
+        author: true,
+        post: true,
+      },
     });
   }
 }
