@@ -166,6 +166,15 @@ export class PostService {
   async filterPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: { categoryId },
+      include: {
+        author: true,
+        comments: {
+          include: {
+            author: true,
+          },
+        },
+        categories: true,
+      },
     });
   }
 }
