@@ -17,10 +17,6 @@ export class PostService {
   private async findPostOrThrow(postId: number): Promise<PrismaPost> {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      include: {
-        author: true,
-        comments: true,
-      },
     });
 
     if (!post) {
@@ -52,15 +48,6 @@ export class PostService {
       this.prisma.post.findMany({
         skip,
         take: pageSize,
-        include: {
-          author: true,
-          comments: {
-            include: {
-              author: true,
-            },
-          },
-          categories: true,
-        },
       }),
       this.prisma.post.count(),
     ]);
@@ -121,15 +108,6 @@ export class PostService {
         where: whereClause,
         skip,
         take: pageSize,
-        include: {
-          author: true,
-          comments: {
-            include: {
-              author: true,
-            },
-          },
-          categories: true,
-        },
       }),
       this.prisma.post.count({ where: whereClause }),
     ]);
@@ -151,30 +129,12 @@ export class PostService {
     return this.prisma.post.update({
       where: { id: postId },
       data: { categoryId },
-      include: {
-        author: true,
-        comments: {
-          include: {
-            author: true,
-          },
-        },
-        categories: true,
-      },
     });
   }
 
   async filterPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: { categoryId },
-      include: {
-        author: true,
-        comments: {
-          include: {
-            author: true,
-          },
-        },
-        categories: true,
-      },
     });
   }
 }
