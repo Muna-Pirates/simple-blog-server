@@ -37,18 +37,12 @@ type Post {
 
   """게시글 작성자의 ID"""
   authorId: Int!
-
-  """게시글의 작성자 정보"""
   author: User!
-
-  """게시글에 달린 댓글들"""
-  comments: [Comment]
+  comments: [Comment!]!
 
   """게시글의 카테고리 ID (없을 수 있음)"""
   categoryId: Int
-
-  """게시글의 카테고리 정보 (없을 수 있음)"""
-  categories: Category
+  categories: [Category!]!
 
   """게시글이 생성된 날짜 및 시간"""
   createdAt: DateTime!

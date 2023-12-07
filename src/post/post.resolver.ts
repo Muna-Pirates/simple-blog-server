@@ -1,5 +1,13 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Int,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { PostService } from './post.service';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
@@ -13,12 +21,18 @@ import { PostSearchInput } from './dto/post-search.input';
 import { PaginationInput } from './dto/pagination.input';
 import { PostPaginationResult } from './types/post-pagination-result.types';
 import { UserService } from 'src/user/user.service';
+import { Category } from 'src/category/types/category.types';
+import { CommentService } from 'src/comment/comment.service';
+import { CategoryService } from 'src/category/category.service';
+import { Comment } from 'src/comment/types/comment.types';
 
 @Resolver(() => Post)
 export class PostResolver {
   constructor(
     private readonly postService: PostService,
     private readonly userService: UserService,
+    private readonly commentService: CommentService,
+    private readonly categoryService: CategoryService,
   ) {}
 
   @Mutation(() => Post, { description: '새로운 포스트를 생성합니다.' })
@@ -109,5 +123,20 @@ export class PostResolver {
     @Args('categoryId', { type: () => Int }) categoryId: number,
   ) {
     return this.postService.filterPostsByCategory(categoryId);
+  }
+
+  @ResolveField('author', () => User)
+  async getAuthor(@Parent() post: Post) {
+    return this.userService.findById(post.authorId);
+  }
+
+  @ResolveField('comments', () => [Comment])
+  async getComments(@Parent() post: Post) {
+    return this.commentService.findCommentsByPostId(post.id);
+  }
+
+  @ResolveField('categories', () => [Category])
+  async getCategories(@Parent() post: Post) {
+    return this.categoryService.findCategoriesByPostId(post.id);
   }
 }

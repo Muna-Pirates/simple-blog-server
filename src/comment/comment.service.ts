@@ -74,4 +74,10 @@ export class CommentService {
       },
     });
   }
+
+  async findCommentsByPostId(postId: number): Promise<Comment[]> {
+    return this.prisma.comment.findMany({
+      where: { postId },
+    });
+  }
 }
