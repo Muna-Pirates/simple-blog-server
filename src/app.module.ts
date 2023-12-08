@@ -14,8 +14,8 @@ import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { GraphQLErrorInterceptor } from './common/filters/global-exception.filter';
 import { ErrorCodeService } from './common/error-code.service';
+import { GraphqlExceptionFilter } from './common/filters/global-exception.filter';
 
 @Module({
   imports: [
@@ -38,12 +38,7 @@ import { ErrorCodeService } from './common/error-code.service';
           };
         }
 
-        // TODO : 전체 에러가 나오도록 (dev에서)
-        return {
-          message: err.message,
-          code: err.extensions?.originalError,
-          status: err.extensions?.status,
-        };
+        return err;
       },
     }),
     UserModule,
@@ -61,7 +56,7 @@ import { ErrorCodeService } from './common/error-code.service';
     ErrorCodeService,
     {
       provide: APP_INTERCEPTOR,
-      useClass: GraphQLErrorInterceptor,
+      useClass: GraphqlExceptionFilter,
     },
   ],
 })
