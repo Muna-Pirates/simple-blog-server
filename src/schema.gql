@@ -132,6 +132,7 @@ type Mutation {
   addComment(createCommentInput: CreateCommentInput!): Comment!
   updateComment(updateCommentInput: UpdateCommentInput!): Comment!
   deleteComment(commentId: Int!): Comment!
+  createCategory(createCategoryInput: CreateCategoryInput!): Category!
 }
 
 input CreateUserInput {
@@ -171,6 +172,10 @@ input CreateCommentInput {
 input UpdateCommentInput {
   id: Int!
   content: String!
+}
+
+input CreateCategoryInput {
+  name: String!
 }
 
 type Subscription {

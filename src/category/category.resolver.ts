@@ -6,12 +6,13 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { CategoryService } from './category.service';
-import { Post, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
 import { GqlRolesGuard } from 'src/auth/role.guard';
 import { Category } from './types/category.types';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { PostService } from 'src/post/post.service';
+import { Post } from 'src/post/types/post.types';
 
 @Resolver(() => Category)
 export class CategoryResolver {

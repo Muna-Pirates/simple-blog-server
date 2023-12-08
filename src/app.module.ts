@@ -51,18 +51,18 @@ import { ErrorCodeService } from './common/error-code.service';
     CommentModule,
     AuthModule,
     RoleModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     AuthService,
     PrismaService,
-    CategoryModule,
+    ErrorCodeService,
     {
       provide: APP_INTERCEPTOR,
       useClass: GraphQLErrorInterceptor,
     },
-    ErrorCodeService,
   ],
 })
 export class AppModule {}
