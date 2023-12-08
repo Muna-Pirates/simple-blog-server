@@ -26,9 +26,22 @@ export class CategoryService {
     }
   }
 
-  async findCategoriesByPostId(postId: number): Promise<Category[]> {
-    return this.prisma.category.findMany({
-      where: { posts: { some: { id: postId } } },
-    });
+  async findCategoryByPostId(postId: number): Promise<Category[]> {
+    try {
+      const categories = await this.prisma.category.findMany({
+        where: {
+          posts: {
+            some: {
+              id: postId,
+            },
+          },
+        },
+      });
+
+      return categories;
+    } catch (error) {
+      console.error('Error finding category by post id:', error);
+      throw error;
+    }
   }
 }

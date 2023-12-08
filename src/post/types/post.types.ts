@@ -36,7 +36,7 @@ export class Post {
     nullable: true,
     description: '게시글의 카테고리 정보 (없을 수 있음)',
   })
-  categories?: Category;
+  category?: Category;
 
   @Field({ description: '게시글이 생성된 날짜 및 시간' })
   createdAt: Date;

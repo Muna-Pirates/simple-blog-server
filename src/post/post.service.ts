@@ -24,7 +24,7 @@ export class PostService {
         ? {
             author: true,
             comments: true,
-            categories: true,
+            category: true,
           }
         : undefined,
     });
@@ -64,7 +64,7 @@ export class PostService {
         include: {
           author: true,
           comments: true,
-          categories: true,
+          category: true,
         },
       }),
       this.prisma.post.count(),
@@ -98,7 +98,7 @@ export class PostService {
       include: {
         author: true,
         comments: true,
-        categories: true,
+        category: true,
       },
     });
   }
@@ -115,7 +115,7 @@ export class PostService {
       include: {
         author: true,
         comments: true,
-        categories: true,
+        category: true,
       },
     });
   }
@@ -139,7 +139,7 @@ export class PostService {
         include: {
           author: true,
           comments: true,
-          categories: true,
+          category: true,
         },
       }),
       this.prisma.post.count({ where: whereClause }),
@@ -163,7 +163,7 @@ export class PostService {
       where: { id: postId },
       data: { categoryId },
       include: {
-        categories: true,
+        category: true,
       },
     });
   }
@@ -174,7 +174,7 @@ export class PostService {
       include: {
         author: true,
         comments: true,
-        categories: true,
+        category: true,
       },
     });
   }
