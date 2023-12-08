@@ -33,7 +33,8 @@ import { ErrorCodeService } from './common/error-code.service';
         if (process.env.NODE_ENV === 'production') {
           return {
             message: err.message,
-            code: err.extensions?.code,
+            code: err.extensions?.originalError,
+            status: err.extensions?.status,
           };
         }
 
