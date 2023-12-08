@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -53,7 +54,7 @@ export class UserService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new InternalServerErrorException(
+        throw new BadRequestException(
           'Email already exists. Please use another email.',
         );
       }
@@ -95,7 +96,7 @@ export class UserService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new InternalServerErrorException(
+        throw new BadRequestException(
           'Email already exists. Please use another email.',
         );
       }
@@ -113,26 +114,41 @@ export class UserService {
   }
 
   async getRole(roleId: number) {
-    const roleRecord = await this.prisma.role.findUnique({
-      where: { id: roleId },
-    });
+    try {
+      const roleRecord = await this.prisma.role.findUnique({
+        where: { id: roleId },
+      });
 
-    if (!roleRecord) {
-      throw new NotFoundException(`Role with ID ${roleId} not found.`);
+      if (!roleRecord) {
+        throw new NotFoundException(`Role with ID ${roleId} not found.`);
+      }
+
+      return roleRecord;
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving role with ID: ${roleId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(`Error retrieving role`);
     }
-
-    return roleRecord;
   }
 
   async getDefaultRole() {
-    const roleRecord = await this.prisma.role.findUnique({
-      where: { id: RoleType.USER },
-    });
+    try {
+      const roleRecord = await this.prisma.role.findUnique({
+        where: { id: RoleType.USER },
+      });
 
-    if (!roleRecord) {
-      throw new Error('Default user role not found.');
+      if (!roleRecord) {
+        throw new NotFoundException('Default user role not found.');
+      }
+
+      return roleRecord;
+    } catch (error) {
+      this.logger.error('Error retrieving default user role', error.stack);
+      throw new InternalServerErrorException(
+        'Error retrieving default user role',
+      );
     }
-
-    return roleRecord;
   }
 }
