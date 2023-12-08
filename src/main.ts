@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import helmet from 'helmet';
-import { GlobalExceptionFilter } from './common/\bfilters/global-exception.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 const prisma = new PrismaClient();
 
