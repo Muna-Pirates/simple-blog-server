@@ -114,6 +114,7 @@ export class UserService {
 
   private handleError(error: any) {
     const errorCode = this.errorService.getErrorCode(error);
+
     switch (errorCode) {
       case ErrorCode.NOT_FOUND:
         throw new NotFoundException();
