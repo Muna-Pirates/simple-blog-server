@@ -1,63 +1,60 @@
+// src/common/errors/custom-error-handler.ts
+
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
 } from '@nestjs/common';
 import { GqlExceptionFilter } from '@nestjs/graphql';
-import { GraphQLError } from 'graphql';
-import { CustomGraphQLError } from '../errors/error-handler';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { ValidationError } from 'class-validator';
 
 @Catch()
 export class GlobalExceptionFilter
   implements ExceptionFilter, GqlExceptionFilter
 {
   catch(exception: unknown, host: ArgumentsHost) {
-    let errorResponse;
+    let response;
 
-    if (exception instanceof PrismaClientKnownRequestError) {
-      errorResponse = this.formatErrorResponse(
-        `Prisma error: ${exception.message}`,
-        'PRISMA_ERROR',
-        { prismaCode: exception.code },
-      );
-    } else if (exception instanceof GraphQLError) {
-      errorResponse = this.formatErrorResponse(
-        exception.message,
-        'GRAPHQL_ERROR',
-        exception.extensions,
-      );
-    } else if (exception instanceof HttpException) {
-      const statusCode = exception.getStatus();
-      errorResponse = this.formatErrorResponse(
-        exception.getResponse()['message'] || exception.message,
-        'HTTP_ERROR',
-        { statusCode },
-      );
-    } else if (exception instanceof Error) {
-      errorResponse = this.formatErrorResponse(
-        exception.message,
-        'INTERNAL_SERVER_ERROR',
-      );
+    if (exception instanceof HttpException) {
+      response = {
+        statusCode: exception.getStatus(),
+        message: exception.getResponse(),
+      };
+    } else if (exception instanceof PrismaClientKnownRequestError) {
+      response = {
+        statusCode: 500,
+        message: exception.message,
+        code: exception.code,
+      };
+    } else if (exception instanceof ValidationError) {
+      response = { statusCode: 400, message: exception.constraints };
+    } else if (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'message' in exception
+    ) {
+      const error = exception as { message: string; code?: string };
+      response = { statusCode: 500, message: error.message, code: error.code };
     } else {
-      errorResponse = this.formatErrorResponse(
-        'Unknown error occurred',
-        'INTERNAL_SERVER_ERROR',
-      );
+      response = { statusCode: 500, message: 'Internal server error' };
     }
 
-    return errorResponse;
-  }
+    const standardizedResponse = {
+      code: response.statusCode,
+      error: response.message,
+    };
 
-  private formatErrorResponse(
-    message: string,
-    code: string,
-    additionalDetails: Record<string, unknown> = {},
-  ) {
-    return new CustomGraphQLError(message, {
-      code,
-      ...additionalDetails,
-    });
+    const context = host.switchToHttp().getRequest();
+    if (context) {
+      host
+        .switchToHttp()
+        .getResponse()
+        .status(response.statusCode)
+        .json(standardizedResponse);
+    } else {
+      return new HttpException(standardizedResponse, response.statusCode);
+    }
   }
 }
