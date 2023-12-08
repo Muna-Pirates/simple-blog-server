@@ -42,8 +42,6 @@ type Post {
 
   """게시글의 카테고리 ID (없을 수 있음)"""
   categoryId: Int
-
-  """게시글의 카테고리 정보 (없을 수 있음)"""
   category: Category
 
   """게시글이 생성된 날짜 및 시간"""
@@ -51,7 +49,6 @@ type Post {
 
   """게시글이 마지막으로 업데이트된 날짜 및 시간"""
   updatedAt: DateTime!
-  categories: Category
 }
 
 type User {
