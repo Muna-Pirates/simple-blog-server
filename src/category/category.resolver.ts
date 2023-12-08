@@ -31,6 +31,6 @@ export class CategoryResolver {
   @ResolveField(() => [Post])
   async posts(@Parent() category: Category) {
     const { id } = category;
-    return this.postService.getPosts(id);
+    return this.postService.getPostsByCategory(id);
   }
 }

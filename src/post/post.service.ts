@@ -183,11 +183,17 @@ export class PostService {
     return this.prisma.user.findUnique({ where: { id: userId } }).posts();
   }
 
-  async getPosts(categoryId: number): Promise<PrismaPost[]> {
+  async getPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: {
         categoryId: categoryId,
       },
+    });
+  }
+
+  async getPost(postId: number): Promise<PrismaPost | null> {
+    return this.prisma.post.findUnique({
+      where: { id: postId },
     });
   }
 }
