@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import helmet from 'helmet';
+import { GraphqlExceptionFilter } from './common/filters/global-exception.filter';
 
 const prisma = new PrismaClient();
 
@@ -27,8 +28,7 @@ async function bootstrap() {
 
     const app = await NestFactory.create(AppModule);
 
-    // const errorCodeService = new ErrorCodeService();
-    // app.useGlobalFilters(new GraphQLErrorFilter(errorCodeService));
+    app.useGlobalFilters(new GraphqlExceptionFilter());
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
       origin: 'http://localhost:7777',

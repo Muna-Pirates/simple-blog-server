@@ -1,22 +1,29 @@
-import { Catch, ArgumentsHost, ExceptionFilter } from '@nestjs/common';
-import { GqlArgumentsHost } from '@nestjs/graphql';
-import { ErrorCodeService } from '../error-code.service';
-import { CustomError } from '../errors/custom-error.class';
+// path/filename: src/common/filters/graphql-exception.filter.ts
+
+import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import { GqlArgumentsHost, GqlExceptionFilter } from '@nestjs/graphql';
 import { GraphQLError } from 'graphql';
 
-@Catch(CustomError)
-export class GraphQLErrorFilter implements ExceptionFilter {
-  constructor(private errorCodeService: ErrorCodeService) {}
+@Catch(GraphQLError)
+export class GraphqlExceptionFilter
+  implements ExceptionFilter, GqlExceptionFilter
+{
+  catch(exception: GraphQLError, host: ArgumentsHost) {
+    const gqlHost = GqlArgumentsHost.create(host);
+    // Additional logic can be added here to handle errors in a way that's
+    // tailored for large-scale applications, such as logging or custom error formatting.
 
-  catch(exception: CustomError) {
-    // Provide a structured error response
-    return new GraphQLError(exception.message || 'Internal Server Error', {
-      extensions: {
-        code: exception.code,
-        // Optionally include stack trace in development mode
-        stacktrace:
-          process.env.NODE_ENV === 'development' ? exception.stack : undefined,
-      },
-    });
+    // Extract useful information from the GraphQLError
+    const formattedError = {
+      message: exception.message,
+      locations: exception.locations,
+      path: exception.path,
+      extensions: exception.extensions,
+    };
+
+    // In a real-world large-scale application, more complex error handling and reporting can be added here.
+
+    // Return the error in a GraphQL-compliant format
+    return formattedError;
   }
 }

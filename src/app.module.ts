@@ -13,7 +13,6 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { formatGraphQLError } from './common/graphql-error-formatter';
 
 @Module({
   imports: [
@@ -27,7 +26,6 @@ import { formatGraphQLError } from './common/graphql-error-formatter';
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: formatGraphQLError,
     }),
     UserModule,
     PostModule,
