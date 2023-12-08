@@ -42,7 +42,7 @@ type Post {
 
   """게시글의 카테고리 ID (없을 수 있음)"""
   categoryId: Int
-  categories: [Category!]!
+  categories: Category
 
   """게시글이 생성된 날짜 및 시간"""
   createdAt: DateTime!

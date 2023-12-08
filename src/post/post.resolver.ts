@@ -135,7 +135,7 @@ export class PostResolver {
     return this.commentService.findCommentsByPostId(post.id);
   }
 
-  @ResolveField('categories', () => [Category])
+  @ResolveField('categories', () => Category, { nullable: true })
   async getCategories(@Parent() post: Post) {
     return this.categoryService.findCategoriesByPostId(post.id);
   }
