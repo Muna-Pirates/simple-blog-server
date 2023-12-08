@@ -1,3 +1,5 @@
+// path/filename: /src/utils/formatGraphQLError.ts
+
 import { GraphQLError } from 'graphql';
 
 interface CustomGraphQLErrorFormat {
@@ -19,15 +21,11 @@ export const formatGraphQLError = (
 
   const path = error.path ? error.path.map((p) => p.toString()) : undefined;
 
-  return {
-    message,
-    code,
-    locations,
-    path,
-  };
+  return { message, code, locations, path };
 };
 
 const determineErrorCode = (error: GraphQLError): string => {
+  // Check for a code in the error extensions
   if (
     typeof error.extensions?.exception === 'object' &&
     'code' in error.extensions.exception
@@ -35,25 +33,27 @@ const determineErrorCode = (error: GraphQLError): string => {
     return (error.extensions.exception as any).code;
   }
 
-  if (error.message.includes('Error finding user by email'))
-    return 'USER_NOT_FOUND';
-  if (error.message.includes('Email already exists'))
-    return 'EMAIL_ALREADY_EXISTS';
-  if (error.message.includes('Error creating user')) return 'USER_NOT_CREATED';
-  if (error.message.includes('Error finding user by ID'))
-    return 'USER_NOT_FOUND';
-  if (error.message.includes('Error finding role by ID'))
-    return 'ROLE_NOT_FOUND';
-  if (error.message.includes('Error finding role by name'))
-    return 'ROLE_NOT_FOUND';
-  if (error.message.includes('Error finding roles')) return 'ROLES_NOT_FOUND';
-  if (error.message.includes('Error finding users')) return 'USERS_NOT_FOUND';
-  if (error.message.includes('Error finding users by role'))
-    return 'USERS_NOT_FOUND';
-  if (error.message.includes('Error finding user by email'))
-    return 'USER_NOT_FOUND';
-  if (error.message.includes('Error finding user by ID'))
-    return 'USER_NOT_FOUND';
+  // Error message patterns and corresponding codes
+  const errorPatterns = [
+    { pattern: 'Error finding user by email', code: 'USER_NOT_FOUND' },
+    { pattern: 'Email already exists', code: 'EMAIL_ALREADY_EXISTS' },
+    { pattern: 'Error creating user', code: 'USER_NOT_CREATED' },
+    { pattern: 'Error finding user by ID', code: 'USER_NOT_FOUND' },
+    { pattern: 'Error finding role by ID', code: 'ROLE_NOT_FOUND' },
+    { pattern: 'Error finding role by name', code: 'ROLE_NOT_FOUND' },
+    { pattern: 'Error finding roles', code: 'ROLES_NOT_FOUND' },
+    { pattern: 'Error finding users', code: 'USERS_NOT_FOUND' },
+    { pattern: 'Error finding users by role', code: 'USERS_NOT_FOUND' },
+    // Add additional patterns as needed
+  ];
 
+  // Determine the error code based on the message pattern
+  for (const { pattern, code } of errorPatterns) {
+    if (error.message.includes(pattern)) {
+      return code;
+    }
+  }
+
+  // Default error code
   return 'GENERIC_ERROR';
 };
