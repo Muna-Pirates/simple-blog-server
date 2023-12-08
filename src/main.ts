@@ -27,6 +27,8 @@ async function bootstrap() {
 
     const app = await NestFactory.create(AppModule);
 
+    // const errorCodeService = new ErrorCodeService();
+    // app.useGlobalFilters(new GraphQLErrorFilter(errorCodeService));
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
       origin: 'http://localhost:7777',

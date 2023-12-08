@@ -56,4 +56,8 @@ export class ErrorCodeService {
   getCode(errorKey: string): string {
     return this.errorCodeMap[errorKey] || '500';
   }
+
+  isValidCode(errorKey: string): boolean {
+    return errorKey in this.errorCodeMap;
+  }
 }

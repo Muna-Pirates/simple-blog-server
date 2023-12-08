@@ -1,36 +1,22 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
-import { GqlContextType, GqlExceptionFilter } from '@nestjs/graphql';
+import { Catch, ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { GqlArgumentsHost } from '@nestjs/graphql';
 import { ErrorCodeService } from '../error-code.service';
 import { CustomError } from '../errors/custom-error.class';
+import { GraphQLError } from 'graphql';
 
-@Catch(Error)
-export class GraphqlExceptionFilter
-  implements ExceptionFilter, GqlExceptionFilter
-{
+@Catch(CustomError)
+export class GraphQLErrorFilter implements ExceptionFilter {
   constructor(private errorCodeService: ErrorCodeService) {}
 
-  catch(exception: Error, host: ArgumentsHost) {
-    if (host.getType<GqlContextType>() !== 'graphql') {
-      return exception;
-    }
-
-    let response;
-
-    if (exception instanceof CustomError) {
-      // CustomError handling
-      const code = this.errorCodeService.getCode(exception.code);
-      response = {
-        message: exception.message || 'An error occurred',
-        code: code,
-      };
-    } else {
-      // Default error handling
-      response = {
-        message: 'Internal Server Error',
-        code: '500',
-      };
-    }
-
-    return response;
+  catch(exception: CustomError) {
+    // Provide a structured error response
+    return new GraphQLError(exception.message || 'Internal Server Error', {
+      extensions: {
+        code: exception.code,
+        // Optionally include stack trace in development mode
+        stacktrace:
+          process.env.NODE_ENV === 'development' ? exception.stack : undefined,
+      },
+    });
   }
 }

@@ -13,9 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { ErrorCodeService } from './common/error-code.service';
-import { GraphqlExceptionFilter } from './common/filters/global-exception.filter';
+import { formatGraphQLError } from './common/graphql-error-formatter';
 
 @Module({
   imports: [
@@ -29,17 +27,7 @@ import { GraphqlExceptionFilter } from './common/filters/global-exception.filter
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: (err) => {
-        if (process.env.NODE_ENV === 'production') {
-          return {
-            message: err.message,
-            code: err.extensions?.originalError,
-            status: err.extensions?.status,
-          };
-        }
-
-        return err;
-      },
+      formatError: formatGraphQLError,
     }),
     UserModule,
     PostModule,
@@ -49,15 +37,6 @@ import { GraphqlExceptionFilter } from './common/filters/global-exception.filter
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    AuthService,
-    PrismaService,
-    ErrorCodeService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: GraphqlExceptionFilter,
-    },
-  ],
+  providers: [AppService, AuthService, PrismaService],
 })
 export class AppModule {}
