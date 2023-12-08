@@ -9,10 +9,13 @@ import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
+import { ErrorCodeService } from 'src/common/error-code.service';
+import { CustomError } from 'src/common/errors/custom-error.class';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
+  private readonly errorCodeService = new ErrorCodeService();
 
   constructor(private prisma: PrismaService) {}
 
@@ -26,7 +29,10 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error(`Error finding user by email: ${email}`, error.stack);
-      throw new InternalServerErrorException('Error finding user by email');
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        'Error finding user by email',
+      );
     }
   }
 
@@ -54,11 +60,15 @@ export class UserService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new BadRequestException(
+        throw new CustomError(
+          this.errorCodeService.getCode('BAD_REQUEST'),
           'Email already exists. Please use another email.',
         );
       }
-      throw new InternalServerErrorException('Error creating user');
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        'Error creating user',
+      );
     }
   }
 
@@ -69,12 +79,18 @@ export class UserService {
         include: { role: true },
       });
       if (!user) {
-        throw new NotFoundException(`User with ID ${id} not found.`);
+        throw new CustomError(
+          this.errorCodeService.getCode('NOT_FOUND'),
+          `User with ID ${id} not found.`,
+        );
       }
       return user;
     } catch (error) {
       this.logger.error(`Error finding user by ID: ${id}`, error.stack);
-      throw new InternalServerErrorException(`Error finding user by ID`);
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        `Error finding user by ID`,
+      );
     }
   }
 
@@ -96,11 +112,15 @@ export class UserService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new BadRequestException(
+        throw new CustomError(
+          this.errorCodeService.getCode('BAD_REQUEST'),
           'Email already exists. Please use another email.',
         );
       }
-      throw new InternalServerErrorException(`Error updating user`);
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        `Error updating user`,
+      );
     }
   }
 
@@ -109,7 +129,10 @@ export class UserService {
       return await this.prisma.user.delete({ where: { id } });
     } catch (error) {
       this.logger.error(`Error deleting user with ID: ${id}`, error.stack);
-      throw new InternalServerErrorException(`Error deleting user`);
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        `Error deleting user`,
+      );
     }
   }
 
@@ -120,7 +143,10 @@ export class UserService {
       });
 
       if (!roleRecord) {
-        throw new NotFoundException(`Role with ID ${roleId} not found.`);
+        throw new CustomError(
+          this.errorCodeService.getCode('NOT_FOUND'),
+          `Role with ID ${roleId} not found.`,
+        );
       }
 
       return roleRecord;
@@ -129,7 +155,10 @@ export class UserService {
         `Error retrieving role with ID: ${roleId}`,
         error.stack,
       );
-      throw new InternalServerErrorException(`Error retrieving role`);
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
+        `Error retrieving role`,
+      );
     }
   }
 
@@ -140,13 +169,17 @@ export class UserService {
       });
 
       if (!roleRecord) {
-        throw new NotFoundException('Default user role not found.');
+        throw new CustomError(
+          this.errorCodeService.getCode('NOT_FOUND'),
+          'Default user role not found.',
+        );
       }
 
       return roleRecord;
     } catch (error) {
       this.logger.error('Error retrieving default user role', error.stack);
-      throw new InternalServerErrorException(
+      throw new CustomError(
+        this.errorCodeService.getCode('INTERNAL_SERVER_ERROR'),
         'Error retrieving default user role',
       );
     }
