@@ -1,14 +1,26 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
+import { ErrorService } from 'src/common/errors/error.service';
+import { ErrorCode } from 'src/common/errors/error-codes';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private errorService: ErrorService,
+  ) {}
 
   async findByEmail(email: string): Promise<User | null> {
     try {
@@ -17,11 +29,7 @@ export class UserService {
         include: { role: true },
       });
     } catch (error) {
-      this.logger.error(`Failed to find user by email: ${error.message}`);
-      throw new HttpException(
-        'Error finding user by email',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -44,16 +52,7 @@ export class UserService {
         include: { role: true },
       });
     } catch (error) {
-      this.logger.error(`Failed to create user: ${error.message}`);
-
-      if (error.code === 'P2002') {
-        throw new HttpException('Email already exists', HttpStatus.BAD_REQUEST);
-      }
-
-      throw new HttpException(
-        'Error creating user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -64,11 +63,7 @@ export class UserService {
         include: { role: true },
       });
     } catch (error) {
-      this.logger.error(`Failed to find user by ID: ${error.message}`);
-      throw new HttpException(
-        'Error finding user by ID',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -85,11 +80,7 @@ export class UserService {
         include: { role: true },
       });
     } catch (error) {
-      this.logger.error(`Failed to update user: ${error.message}`);
-      throw new HttpException(
-        'Error updating user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -97,11 +88,7 @@ export class UserService {
     try {
       return await this.prisma.user.delete({ where: { id } });
     } catch (error) {
-      this.logger.error(`Failed to delete user: ${error.message}`);
-      throw new HttpException(
-        'Error deleting user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -111,11 +98,7 @@ export class UserService {
         where: { id: roleId },
       });
     } catch (error) {
-      this.logger.error(`Failed to get role: ${error.message}`);
-      throw new HttpException(
-        'Error retrieving role',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
     }
   }
 
@@ -125,11 +108,23 @@ export class UserService {
         where: { id: RoleType.USER },
       });
     } catch (error) {
-      this.logger.error(`Failed to get default role: ${error.message}`);
-      throw new HttpException(
-        'Error retrieving default role',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleError(error);
+    }
+  }
+
+  private handleError(error: any) {
+    const errorCode = this.errorService.getErrorCode(error);
+    switch (errorCode) {
+      case ErrorCode.NOT_FOUND:
+        throw new NotFoundException();
+      case ErrorCode.VALIDATION_ERROR:
+        throw new BadRequestException();
+      case ErrorCode.AUTHORIZATION_ERROR:
+        throw new UnauthorizedException();
+      case ErrorCode.INTERNAL_SERVER_ERROR:
+      default:
+        this.logger.error(error.message, error.stack);
+        throw new InternalServerErrorException();
     }
   }
 }
