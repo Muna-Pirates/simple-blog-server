@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { Category } from '@prisma/client';
@@ -20,7 +20,7 @@ export class CategoryService {
       console.error('Error creating category:', error);
 
       if (error.code === 'P2002') {
-        throw new Error('Category name already exists');
+        throw new InternalServerErrorException('Category name already exists');
       }
 
       throw error;
