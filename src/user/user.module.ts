@@ -6,6 +6,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { RoleService } from 'src/role/role.service';
 import { CommentService } from 'src/comment/comment.service';
 import { PostService } from 'src/post/post.service';
+import { ErrorService } from 'src/common/errors/error.service';
 
 @Module({
   providers: [
@@ -16,6 +17,7 @@ import { PostService } from 'src/post/post.service';
     RoleService,
     CommentService,
     PostService,
+    ErrorService,
   ],
 })
 export class UserModule {}

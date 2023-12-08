@@ -5,6 +5,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { CommentService } from 'src/comment/comment.service';
 import { CategoryService } from 'src/category/category.service';
+import { ErrorService } from 'src/common/errors/error.service';
 
 @Module({
   providers: [
@@ -14,6 +15,7 @@ import { CategoryService } from 'src/category/category.service';
     UserService,
     CommentService,
     CategoryService,
+    ErrorService,
   ],
 })
 export class PostModule {}
