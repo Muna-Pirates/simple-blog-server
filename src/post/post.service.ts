@@ -14,9 +14,19 @@ import { PaginationInput } from './dto/pagination.input';
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async findPostOrThrow(postId: number): Promise<PrismaPost> {
+  private async findPostOrThrow(
+    postId: number,
+    includeRelations = false,
+  ): Promise<PrismaPost> {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
+      include: includeRelations
+        ? {
+            author: true,
+            comments: true,
+            categories: true,
+          }
+        : undefined,
     });
 
     if (!post) {
@@ -37,6 +47,9 @@ export class PostService {
   ): Promise<PrismaPost> {
     return this.prisma.post.create({
       data: createPostInput,
+      include: {
+        author: true,
+      },
     });
   }
 
@@ -48,6 +61,11 @@ export class PostService {
       this.prisma.post.findMany({
         skip,
         take: pageSize,
+        include: {
+          author: true,
+          comments: true,
+          categories: true,
+        },
       }),
       this.prisma.post.count(),
     ]);
@@ -63,7 +81,7 @@ export class PostService {
   }
 
   async findOneById(postId: number): Promise<PrismaPost> {
-    return this.findPostOrThrow(postId);
+    return this.findPostOrThrow(postId, true);
   }
 
   async updatePostWithAuthorization(
@@ -77,6 +95,11 @@ export class PostService {
     return this.prisma.post.update({
       where: { id: postId },
       data: updateData,
+      include: {
+        author: true,
+        comments: true,
+        categories: true,
+      },
     });
   }
 
@@ -89,6 +112,11 @@ export class PostService {
 
     return this.prisma.post.delete({
       where: { id: postId },
+      include: {
+        author: true,
+        comments: true,
+        categories: true,
+      },
     });
   }
 
@@ -108,6 +136,11 @@ export class PostService {
         where: whereClause,
         skip,
         take: pageSize,
+        include: {
+          author: true,
+          comments: true,
+          categories: true,
+        },
       }),
       this.prisma.post.count({ where: whereClause }),
     ]);
@@ -129,12 +162,20 @@ export class PostService {
     return this.prisma.post.update({
       where: { id: postId },
       data: { categoryId },
+      include: {
+        categories: true,
+      },
     });
   }
 
   async filterPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: { categoryId },
+      include: {
+        author: true,
+        comments: true,
+        categories: true,
+      },
     });
   }
 }
