@@ -38,7 +38,12 @@ import { ErrorCodeService } from './common/error-code.service';
           };
         }
 
-        return err;
+        // TODO : 전체 에러가 나오도록 (dev에서)
+        return {
+          message: err.message,
+          code: err.extensions?.originalError,
+          status: err.extensions?.status,
+        };
       },
     }),
     UserModule,
