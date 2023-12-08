@@ -13,7 +13,9 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { CustomGraphQLError } from './common/errors/error-handler';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { GraphQLErrorInterceptor } from './common/filters/global-exception.filter';
+import { ErrorCodeService } from './common/error-code.service';
 
 @Module({
   imports: [
@@ -27,16 +29,24 @@ import { CustomGraphQLError } from './common/errors/error-handler';
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: CustomGraphQLError.formatError,
     }),
     UserModule,
     PostModule,
     CommentModule,
     AuthModule,
     RoleModule,
-    CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService, PrismaService],
+  providers: [
+    AppService,
+    AuthService,
+    PrismaService,
+    CategoryModule,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: GraphQLErrorInterceptor,
+    },
+    ErrorCodeService,
+  ],
 })
 export class AppModule {}

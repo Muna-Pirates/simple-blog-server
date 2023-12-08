@@ -1,60 +1,31 @@
-// src/common/errors/custom-error-handler.ts
-
 import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
 } from '@nestjs/common';
-import { GqlExceptionFilter } from '@nestjs/graphql';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ValidationError } from 'class-validator';
+import { GqlExecutionContext } from '@nestjs/graphql';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { ErrorCodeService } from '../error-code.service';
+import { CustomError } from '../errors/custom-error.class';
 
-@Catch()
-export class GlobalExceptionFilter
-  implements ExceptionFilter, GqlExceptionFilter
-{
-  catch(exception: unknown, host: ArgumentsHost) {
-    let response;
+@Injectable()
+export class GraphQLErrorInterceptor implements NestInterceptor {
+  constructor(private errorCodeService: ErrorCodeService) {}
 
-    if (exception instanceof HttpException) {
-      response = {
-        statusCode: exception.getStatus(),
-        message: exception.getResponse(),
-      };
-    } else if (exception instanceof PrismaClientKnownRequestError) {
-      response = {
-        statusCode: 500,
-        message: exception.message,
-        code: exception.code,
-      };
-    } else if (exception instanceof ValidationError) {
-      response = { statusCode: 400, message: exception.constraints };
-    } else if (
-      typeof exception === 'object' &&
-      exception !== null &&
-      'message' in exception
-    ) {
-      const error = exception as { message: string; code?: string };
-      response = { statusCode: 500, message: error.message, code: error.code };
-    } else {
-      response = { statusCode: 500, message: 'Internal server error' };
-    }
-
-    const standardizedResponse = {
-      code: response.statusCode,
-      error: response.message,
-    };
-
-    const context = host.switchToHttp().getRequest();
-    if (context) {
-      host
-        .switchToHttp()
-        .getResponse()
-        .status(response.statusCode)
-        .json(standardizedResponse);
-    } else {
-      return new HttpException(standardizedResponse, response.statusCode);
-    }
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      catchError((error) => {
+        if (error instanceof CustomError) {
+          const gqlContext = GqlExecutionContext.create(context);
+          const response = gqlContext.getContext().res;
+          const errorCode = this.errorCodeService.getCode(error.code);
+          response.status(errorCode);
+          return throwError(() => new Error(error.message));
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 }
