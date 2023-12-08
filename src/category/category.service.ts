@@ -9,10 +9,6 @@ export class CategoryService {
 
   async create(createCategoryInput: CreateCategoryInput): Promise<Category> {
     try {
-      if (!createCategoryInput.name || createCategoryInput.name.trim() === '') {
-        throw new Error('Category name cannot be empty');
-      }
-
       const category = await this.prisma.category.create({
         data: {
           name: createCategoryInput.name,
@@ -22,6 +18,11 @@ export class CategoryService {
       return category;
     } catch (error) {
       console.error('Error creating category:', error);
+
+      if (error.code === 'P2002') {
+        throw new Error('Category name already exists');
+      }
+
       throw error;
     }
   }
