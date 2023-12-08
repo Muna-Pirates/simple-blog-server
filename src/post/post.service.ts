@@ -178,4 +178,8 @@ export class PostService {
       },
     });
   }
+
+  async getUserPosts(userId: number): Promise<PrismaPost[]> {
+    return this.prisma.user.findUnique({ where: { id: userId } }).posts();
+  }
 }

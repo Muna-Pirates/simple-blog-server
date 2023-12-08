@@ -80,4 +80,8 @@ export class CommentService {
       where: { postId },
     });
   }
+
+  async getUserComments(userId: number): Promise<Comment[]> {
+    return this.prisma.user.findUnique({ where: { id: userId } }).comments();
+  }
 }

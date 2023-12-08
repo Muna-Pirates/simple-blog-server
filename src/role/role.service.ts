@@ -24,4 +24,8 @@ export class RoleService {
       throw new Error(`Failed to find role: ${error.message}`);
     }
   }
+
+  async getUserRole(userId: number): Promise<Role> {
+    return this.prismaService.user.findUnique({ where: { id: userId } }).role();
+  }
 }
