@@ -29,6 +29,16 @@ import { ErrorCodeService } from './common/error-code.service';
       subscriptions: {
         'graphql-ws': true,
       },
+      formatError: (err) => {
+        if (process.env.NODE_ENV === 'production') {
+          return {
+            message: err.message,
+            code: err.extensions?.code,
+          };
+        }
+
+        return err;
+      },
     }),
     UserModule,
     PostModule,
