@@ -2,14 +2,15 @@ import {
   Args,
   Int,
   Mutation,
+  Parent,
   Query,
+  ResolveField,
   Resolver,
   Subscription,
 } from '@nestjs/graphql';
 import { PostService } from 'src/post/post.service';
 import { CommentService } from './comment.service';
 import { UseGuards } from '@nestjs/common';
-import { User } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { GqlAuthGuard } from 'src/auth/auth.guard';
@@ -18,8 +19,9 @@ import { GqlRolesGuard } from 'src/auth/role.guard';
 import { UpdateCommentInput } from './dto/update-comment.input';
 import { RoleType } from 'src/role/entities/role.entity';
 import { PubSubService } from 'src/common/pubsub.service';
-
-@Resolver()
+import { User } from 'src/user/types/user.types';
+import { Post } from 'src/post/types/post.types';
+@Resolver(() => Comment)
 export class CommentResolver {
   constructor(
     private readonly commentService: CommentService,
@@ -84,7 +86,7 @@ export class CommentResolver {
   @UseGuards(GqlAuthGuard, GqlRolesGuard)
   async deleteComment(
     @Args('commentId', { type: () => Int }) commentId: number,
-    @CurrentUser() currentUser: User,
+    @CurrentUser() currentUser: { id: number; roleId: RoleType },
   ) {
     const comment = await this.commentService.findOne(commentId);
     this.throwIfNotFound(comment, 'Comment', commentId);
@@ -107,5 +109,15 @@ export class CommentResolver {
   })
   onCommentAdded(@Args('postId', { type: () => Int }) postId: number) {
     return this.pubSubService.asyncIterator<Comment>('onCommentAdded');
+  }
+
+  @ResolveField('author', (returns) => User)
+  async getAuthor(@Parent() comment: Comment) {
+    return this.commentService.getAuthor(comment.authorId);
+  }
+
+  @ResolveField('post', (returns) => Post)
+  async getPost(@Parent() comment: Comment) {
+    return this.commentService.getPost(comment.postId);
   }
 }

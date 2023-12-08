@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Comment, Prisma } from '@prisma/client';
+import { Comment, Post, Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class CommentService {
@@ -83,5 +83,17 @@ export class CommentService {
 
   async getUserComments(userId: number): Promise<Comment[]> {
     return this.prisma.user.findUnique({ where: { id: userId } }).comments();
+  }
+
+  async getAuthor(authorId: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id: authorId },
+    });
+  }
+
+  async getPost(postId: number): Promise<Post | null> {
+    return this.prisma.post.findUnique({
+      where: { id: postId },
+    });
   }
 }

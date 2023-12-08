@@ -13,7 +13,7 @@ import { Category } from './types/category.types';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { PostService } from 'src/post/post.service';
 
-@Resolver()
+@Resolver(() => Category)
 export class CategoryResolver {
   constructor(
     private readonly categoryService: CategoryService,
