@@ -26,6 +26,22 @@ import { CategoryModule } from './category/category.module';
       subscriptions: {
         'graphql-ws': true,
       },
+      formatError: (err) => {
+        if (process.env.NODE_ENV === 'production') {
+          return {
+            message: err.message,
+            code: err.extensions?.originalError,
+            status: err.extensions?.status,
+          };
+        }
+
+        // TODO: DEV는 전부 보이게 하기
+        return {
+          message: err.message,
+          code: err.extensions?.originalError,
+          status: err.extensions?.status,
+        };
+      },
     }),
     UserModule,
     PostModule,
