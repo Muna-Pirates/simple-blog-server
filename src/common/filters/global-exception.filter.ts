@@ -1,4 +1,3 @@
-// /path/to/http-exception.filter.ts
 import {
   ExceptionFilter,
   Catch,
