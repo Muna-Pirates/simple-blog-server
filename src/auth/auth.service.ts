@@ -1,6 +1,4 @@
-// path/filename: src/auth/auth.service.ts
-
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -16,11 +14,12 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly maxLoginAttempts = 5;
   private readonly loginAttemptTTL = 60 * 5; // 5 minutes
+  private readonly accountLockoutTime = 60 * 30; // 30 minutes
 
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    @Inject(CacheService) private cacheService: CacheService,
+    private cacheService: CacheService,
   ) {}
 
   async validateUser(
@@ -28,22 +27,27 @@ export class AuthService {
     password: string,
   ): Promise<AuthenticatedUser | null> {
     const accessKey = `loginAttempts:${email}`;
-    const loginAttempts = await this.getLoginAttempts(accessKey);
+    const accountLockedKey = `accountLocked:${email}`;
 
-    if (loginAttempts > this.maxLoginAttempts) {
-      throw new Error('Too many login attempts. Please try again later.');
+    if (await this.isAccountLocked(accountLockedKey)) {
+      throw new Error('Account temporarily locked. Please try again later.');
+    }
+
+    const loginAttempts = await this.getLoginAttempts(accessKey);
+    if (loginAttempts >= this.maxLoginAttempts) {
+      await this.lockAccount(accountLockedKey);
+      throw new Error('Account temporarily locked. Please try again later.');
     }
 
     const user = await this.findUserByEmail(email);
     if (!user) {
       await this.incrementLoginAttempts(accessKey);
-      throw new Error('User not found');
+      throw new Error('Login failed. Please try again.');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    if (!(await bcrypt.compare(password, user.password))) {
       await this.incrementLoginAttempts(accessKey);
-      throw new Error('Invalid password');
+      throw new Error('Login failed. Please try again.');
     }
 
     await this.resetLoginAttempts(accessKey);
@@ -68,6 +72,14 @@ export class AuthService {
 
   private async resetLoginAttempts(key: string): Promise<void> {
     await this.cacheService.del(key);
+  }
+
+  private async isAccountLocked(key: string): Promise<boolean> {
+    return (await this.cacheService.get<boolean>(key)) ?? false;
+  }
+
+  private async lockAccount(key: string): Promise<void> {
+    await this.cacheService.set(key, true, this.accountLockoutTime);
   }
 
   generateJwtToken(user: AuthenticatedUser): string {
