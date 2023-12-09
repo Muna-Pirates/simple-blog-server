@@ -122,7 +122,7 @@ export class PostResolver {
   async filterPostsByCategory(
     @Args('categoryId', { type: () => Int }) categoryId: number,
   ) {
-    return this.postService.filterPostsByCategory(categoryId);
+    return this.postService.getPostsByCategory(categoryId);
   }
 
   @ResolveField('author', () => User)

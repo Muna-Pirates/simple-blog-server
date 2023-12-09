@@ -1,11 +1,10 @@
-// path/filename: src/posts/post.service.ts
 import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { Post as PrismaPost, Prisma } from '@prisma/client';
+import { Post as PrismaPost, Prisma, User } from '@prisma/client';
 import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
@@ -15,39 +14,40 @@ import { PaginationInput } from './dto/pagination.input';
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Reusable method for fetching posts with includes
-  private async fetchPostWithIncludes(
-    postId: number,
-    includeExtras = true,
-  ): Promise<PrismaPost> {
-    const includes = includeExtras
-      ? { author: true, comments: true, category: true }
-      : {};
-    return await this.prisma.post.findUnique({
-      where: { id: postId },
-      include: includes,
-    });
+  private async findEntityOrThrow(
+    entity: 'post' | 'user',
+    where: Prisma.PostWhereUniqueInput | Prisma.UserWhereUniqueInput,
+    errorMessage: string,
+  ): Promise<PrismaPost | User> {
+    if (entity === 'post') {
+      const post = await this.prisma.post.findUnique({
+        where: where as Prisma.PostWhereUniqueInput,
+      });
+      if (!post) throw new NotFoundException(errorMessage);
+      return post as PrismaPost;
+    } else {
+      const user = await this.prisma.user.findUnique({
+        where: where as Prisma.UserWhereUniqueInput,
+      });
+      if (!user) throw new NotFoundException(errorMessage);
+      return user as User;
+    }
   }
 
-  // Enhanced error handling with NotFoundException
-  private async findPostOrThrow(postId: number): Promise<PrismaPost> {
-    const post = await this.fetchPostWithIncludes(postId);
-    if (!post) throw new NotFoundException(`Post with ID ${postId} not found.`);
-    return post;
-  }
-
-  // Improved authorization checks with UnauthorizedException
-  private checkAuthorization(
-    post: PrismaPost,
+  private async checkAuthorization(
+    post: PrismaPost | User,
     userId: number,
     roleId: number,
-  ): void {
+  ): Promise<void> {
+    if (!('title' in post && 'content' in post)) {
+      throw new Error('Invalid post object provided');
+    }
+
     if (post.authorId !== userId && roleId !== RoleType.ADMIN) {
       throw new UnauthorizedException('Unauthorized action on this post');
     }
   }
 
-  // Simplified database operation for creating a post
   async createPost(
     createPostInput: Prisma.PostCreateInput,
   ): Promise<PrismaPost> {
@@ -57,41 +57,47 @@ export class PostService {
     });
   }
 
-  // Pagination logic abstracted for reusability
   private getPaginationDetails(pagination: PaginationInput) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
-    return { skip, pageSize };
+    return { skip, take: pageSize };
   }
 
-  // Optimized findAll method with reusable pagination logic
   async findAll(pagination: PaginationInput) {
-    const { skip, pageSize } = this.getPaginationDetails(pagination);
-    const [posts, totalItems] = await Promise.all([
-      this.prisma.post.findMany({
-        skip,
-        take: pageSize,
-        include: { author: true, comments: true, category: true },
-      }),
-      this.prisma.post.count(),
-    ]);
-
+    const paginationDetails = this.getPaginationDetails(pagination);
+    const posts = await this.prisma.post.findMany({
+      ...paginationDetails,
+      include: { author: true, comments: true, category: true },
+    });
+    const totalItems = await this.prisma.post.count();
     return { posts, pagination: { ...pagination, totalItems } };
   }
 
-  // Simplified method for finding a single post by ID
   async findOneById(postId: number): Promise<PrismaPost> {
-    return this.findPostOrThrow(postId);
+    return this.findEntityOrThrow(
+      'post',
+      { id: postId },
+      `Post with ID ${postId} not found.`,
+    ) as Promise<PrismaPost>;
   }
 
-  // Updated updatePost method with enhanced authorization and error handling
   async updatePost(
     postId: number,
     updateData: UpdatePostInput,
     user: { id: number; roleId: number },
   ): Promise<PrismaPost> {
-    const post = await this.findPostOrThrow(postId);
-    this.checkAuthorization(post, user.id, user.roleId);
+    const post = await this.findEntityOrThrow(
+      'post',
+      { id: postId },
+      `Post with ID ${postId} not found.`,
+    );
+
+    // Type guard to ensure post is PrismaPost
+    if (!('title' in post && 'content' in post)) {
+      throw new Error('Invalid post object provided');
+    }
+
+    await this.checkAuthorization(post, user.id, user.roleId);
     return this.prisma.post.update({
       where: { id: postId },
       data: updateData,
@@ -99,44 +105,39 @@ export class PostService {
     });
   }
 
-  // Updated deletePost method with improved authorization checks
   async deletePost(
     postId: number,
     user: { id: number; roleId: number },
   ): Promise<PrismaPost> {
-    const post = await this.findPostOrThrow(postId);
-    this.checkAuthorization(post, user.id, user.roleId);
+    const post = await this.findEntityOrThrow(
+      'post',
+      { id: postId },
+      `Post with ID ${postId} not found.`,
+    );
+    await this.checkAuthorization(post, user.id, user.roleId);
     return this.prisma.post.delete({
       where: { id: postId },
       include: { author: true, comments: true, category: true },
     });
   }
 
-  // Refined searchPosts method with reusable pagination and simplified logic
   async searchPosts(criteria: PostSearchInput, pagination: PaginationInput) {
     const { title, content, authorId } = criteria;
-    const { skip, pageSize } = this.getPaginationDetails(pagination);
-
+    const paginationDetails = this.getPaginationDetails(pagination);
     const whereClause: Prisma.PostWhereInput = {
       title: title ? { contains: title } : undefined,
       content: content ? { contains: content } : undefined,
       authorId: authorId || undefined,
     };
-
-    const [posts, totalItems] = await Promise.all([
-      this.prisma.post.findMany({
-        where: whereClause,
-        skip,
-        take: pageSize,
-        include: { author: true, comments: true, category: true },
-      }),
-      this.prisma.post.count({ where: whereClause }),
-    ]);
-
+    const posts = await this.prisma.post.findMany({
+      where: whereClause,
+      ...paginationDetails,
+      include: { author: true, comments: true, category: true },
+    });
+    const totalItems = await this.prisma.post.count({ where: whereClause });
     return { posts, pagination: { ...pagination, totalItems } };
   }
 
-  // Additional methods for category assignment and filtering
   async assignCategoryToPost(
     postId: number,
     categoryId: number,
@@ -148,28 +149,19 @@ export class PostService {
     });
   }
 
-  async filterPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
-    return this.prisma.post.findMany({
-      where: { categoryId },
-      include: { author: true, comments: true, category: true },
-    });
-  }
-
-  // Utilizing Prisma relations for fetching user posts
   async getUserPosts(userId: number): Promise<PrismaPost[]> {
-    return this.prisma.user.findUnique({ where: { id: userId } }).posts();
+    const user = await this.findEntityOrThrow(
+      'user',
+      { id: userId },
+      `User with ID ${userId} not found.`,
+    );
+    return this.prisma.post.findMany({ where: { authorId: user.id } });
   }
 
-  // Method for getting posts by category ID
   async getPostsByCategory(categoryId: number): Promise<PrismaPost[]> {
     return this.prisma.post.findMany({
       where: { categoryId },
       include: { author: true, comments: true, category: true },
     });
-  }
-
-  // Simplified method for getting a single post
-  async getPost(postId: number): Promise<PrismaPost | null> {
-    return this.prisma.post.findUnique({ where: { id: postId } });
   }
 }

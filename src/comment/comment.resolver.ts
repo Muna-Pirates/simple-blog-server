@@ -118,6 +118,6 @@ export class CommentResolver {
 
   @ResolveField('post', (returns) => Post)
   async getPost(@Parent() comment: Comment) {
-    return this.postService.getPost(comment.postId);
+    return this.postService.findOneById(comment.postId);
   }
 }
