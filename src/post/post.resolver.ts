@@ -46,7 +46,7 @@ export class PostResolver {
       author: { connect: { id: user.id } },
     };
 
-    return this.postService.createPostWithAuthor(prismaPostInput);
+    return this.postService.createPost(prismaPostInput);
   }
 
   @Query(() => PostPaginationResult, {
@@ -76,7 +76,7 @@ export class PostResolver {
   ) {
     const user = await this.userService.findById(currentUser.id);
 
-    return this.postService.updatePostWithAuthorization(postId, updateData, {
+    return this.postService.updatePost(postId, updateData, {
       id: user.id,
       roleId: user.roleId,
     });
@@ -90,7 +90,7 @@ export class PostResolver {
   ) {
     const user = await this.userService.findById(currentUser.id);
 
-    return this.postService.deletePostWithAuthorization(postId, {
+    return this.postService.deletePost(postId, {
       id: user.id,
       roleId: user.roleId,
     });
