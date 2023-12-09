@@ -1,80 +1,98 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { Prisma, Role, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
-import { ErrorService } from 'src/common/errors/error.service';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ErrorCode } from 'src/common/errors/error-codes';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(
-    private prisma: PrismaService,
-    private errorService: ErrorService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async findByEmail(email: string): Promise<User | null> {
+  private async hashPassword(password: string): Promise<string> {
     try {
-      return await this.prisma.user.findUnique({
-        where: { email },
-        include: { role: true },
-      });
+      return await bcrypt.hash(password, 10);
     } catch (error) {
-      this.handleError(error);
+      this.logger.error('Error hashing password', error.stack);
+      throw new InternalServerErrorException('Error processing password');
     }
   }
 
-  async create(data: Prisma.UserCreateInput): Promise<User> {
+  private async findUserByUniqueField(
+    field: 'email' | 'id',
+    value: string | number,
+  ): Promise<User | null> {
+    let whereCondition: Prisma.UserWhereUniqueInput;
+
+    if (field === 'email') {
+      whereCondition = { email: value as string };
+    } else if (field === 'id') {
+      whereCondition = { id: value as number };
+    } else {
+      throw new Error(`Invalid field: ${field}`);
+    }
+
+    return this.prisma.user.findUnique({
+      where: whereCondition,
+      include: { role: true },
+    });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.findUserByUniqueField('email', email);
+  }
+
+  async create(userData: Prisma.UserCreateInput): Promise<User> {
     try {
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      const userData: Prisma.UserCreateInput = {
-        email: data.email,
+      const hashedPassword = await this.hashPassword(userData.password);
+      const newUser: Prisma.UserCreateInput = {
+        ...userData,
         password: hashedPassword,
-        name: data.name,
         role: {
-          connect: data.role
-            ? { id: data.role.connect?.id || RoleType.USER }
+          connect: userData.role
+            ? { id: userData.role.connect?.id || RoleType.USER }
             : undefined,
         },
       };
 
       return await this.prisma.user.create({
-        data: userData,
+        data: newUser,
         include: { role: true },
       });
     } catch (error) {
-      this.handleError(error);
+      this.logger.error('Error creating user', error.stack);
+      throw new InternalServerErrorException('Error creating user');
     }
   }
 
   async findById(id: number): Promise<User | null> {
-    try {
-      return await this.prisma.user.findUnique({
-        where: { id },
-        include: { role: true },
-      });
-    } catch (error) {
-      this.handleError(error);
-    }
+    return this.findUserByUniqueField('id', id);
   }
 
-  async update(id: number, data: Prisma.UserUpdateInput): Promise<User> {
+  async update(id: number, updateData: Prisma.UserUpdateInput): Promise<User> {
     try {
+      const updatedUser = {
+        ...updateData,
+        role: updateData.role?.connect
+          ? { connect: { id: updateData.role.connect.id } }
+          : undefined,
+      };
+
       return await this.prisma.user.update({
         where: { id },
-        data: {
-          ...data,
-          role: data.role?.connect
-            ? { connect: { id: data.role.connect.id } }
-            : undefined,
-        },
+        data: updatedUser,
         include: { role: true },
       });
     } catch (error) {
-      this.handleError(error);
+      this.logger.error(`Error updating user with ID ${id}`, error.stack);
+      throw new InternalServerErrorException(
+        `Error updating user with ID ${id}`,
+      );
     }
   }
 
@@ -82,53 +100,27 @@ export class UserService {
     try {
       return await this.prisma.user.delete({ where: { id } });
     } catch (error) {
-      this.handleError(error);
+      this.logger.error(`Error deleting user with ID ${id}`, error.stack);
+      throw new InternalServerErrorException(
+        `Error deleting user with ID ${id}`,
+      );
     }
   }
 
-  async getRole(roleId: number) {
+  async getRole(roleId: number): Promise<Role | null> {
     try {
       return await this.prisma.role.findUnique({
         where: { id: roleId },
       });
     } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  async getDefaultRole() {
-    try {
-      return await this.prisma.role.findUnique({
-        where: { id: RoleType.USER },
-      });
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  private handleError(error: any): never {
-    this.logger.error(`Error occurred: ${error.message}`);
-
-    if (error instanceof PrismaClientKnownRequestError) {
-      const errorCode = this.errorService.getErrorCode(error);
-      switch (errorCode) {
-        case ErrorCode.NOT_FOUND:
-          throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-        case ErrorCode.VALIDATION_ERROR:
-          throw new HttpException('Validation Error', HttpStatus.BAD_REQUEST);
-        case ErrorCode.AUTHORIZATION_ERROR:
-          throw new HttpException('Authorization Error', HttpStatus.FORBIDDEN);
-        default:
-          throw new HttpException(
-            'Internal Server Error',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-      }
-    } else {
-      throw new HttpException(
-        'Internal Server Error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+      this.logger.error(`Error retrieving role with ID ${roleId}`, error.stack);
+      throw new InternalServerErrorException(
+        `Error retrieving role with ID ${roleId}`,
       );
     }
+  }
+
+  async getDefaultRole(): Promise<Role | null> {
+    return this.getRole(RoleType.USER);
   }
 }
