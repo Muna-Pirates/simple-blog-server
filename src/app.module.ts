@@ -31,14 +31,13 @@ import { AuthService } from './auth/auth.service';
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         subscriptions: { 'graphql-ws': true },
         formatError: (error: GraphQLError) =>
-          new EnhancedErrorFormatter(
-            new LoggerService(configService),
-          ).formatGraphQLError(error),
+          new EnhancedErrorFormatter(new LoggerService()).formatGraphQLError(
+            error,
+          ),
       }),
       inject: [ConfigService],
     }),
     CacheModule.registerAsync({
-      imports: [ConfigModule],
       useFactory: async (
         configService: ConfigService,
       ): Promise<CacheModuleOptions> => ({
