@@ -2,45 +2,72 @@ import {
   Injectable,
   Logger,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
+import { CacheService } from 'src/common/cache.service';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
+  private readonly saltRounds = 12;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   private async hashPassword(password: string): Promise<string> {
     try {
-      return await bcrypt.hash(password, 10);
+      const salt = await bcrypt.genSalt(this.saltRounds);
+      return await bcrypt.hash(password, salt);
     } catch (error) {
       this.logger.error('Error hashing password', error.stack);
       throw new InternalServerErrorException('Error processing password');
     }
   }
 
+  private async checkPermissions(
+    userId: number,
+    requiredRole: RoleType,
+  ): Promise<boolean> {
+    const user = await this.findById(userId);
+    return user.roleId === requiredRole;
+  }
+
   private async findUserByUniqueField(
     field: 'email' | 'id',
     value: string | number,
   ): Promise<User | null> {
-    let whereCondition: Prisma.UserWhereUniqueInput;
+    try {
+      const cacheKey = `user:${field}:${value}`;
+      const cachedUser = await this.cacheService.get<User>(cacheKey);
+      if (cachedUser) return cachedUser;
 
-    if (field === 'email') {
-      whereCondition = { email: value as string };
-    } else if (field === 'id') {
-      whereCondition = { id: value as number };
-    } else {
-      throw new Error(`Invalid field: ${field}`);
+      let whereCondition: Prisma.UserWhereUniqueInput;
+      if (field === 'email') {
+        whereCondition = { email: value as string };
+      } else {
+        whereCondition = { id: value as number };
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: whereCondition,
+        include: { role: true },
+      });
+
+      if (user) {
+        await this.cacheService.set(cacheKey, user);
+      }
+
+      return user;
+    } catch (error) {
+      this.logger.error(`Error finding user by ${field}`, error.stack);
+      throw new InternalServerErrorException(`Error finding user by ${field}`);
     }
-
-    return this.prisma.user.findUnique({
-      where: whereCondition,
-      include: { role: true },
-    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -49,7 +76,12 @@ export class UserService {
 
   async create(userData: Prisma.UserCreateInput): Promise<User> {
     try {
+      if (!userData.password) {
+        throw new BadRequestException('Password is required');
+      }
+
       const hashedPassword = await this.hashPassword(userData.password);
+
       const newUser: Prisma.UserCreateInput = {
         ...userData,
         password: hashedPassword,
@@ -109,9 +141,7 @@ export class UserService {
 
   async getRole(roleId: number): Promise<Role | null> {
     try {
-      return await this.prisma.role.findUnique({
-        where: { id: roleId },
-      });
+      return await this.prisma.role.findUnique({ where: { id: roleId } });
     } catch (error) {
       this.logger.error(`Error retrieving role with ID ${roleId}`, error.stack);
       throw new InternalServerErrorException(

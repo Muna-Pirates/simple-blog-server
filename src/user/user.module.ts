@@ -7,6 +7,7 @@ import { RoleService } from 'src/role/role.service';
 import { CommentService } from 'src/comment/comment.service';
 import { PostService } from 'src/post/post.service';
 import { ErrorService } from 'src/common/errors/error.service';
+import { CacheService } from 'src/common/cache.service';
 
 @Module({
   providers: [
@@ -18,6 +19,7 @@ import { ErrorService } from 'src/common/errors/error.service';
     CommentService,
     PostService,
     ErrorService,
+    CacheService,
   ],
 })
 export class UserModule {}

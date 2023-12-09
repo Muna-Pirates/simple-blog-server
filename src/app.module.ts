@@ -18,6 +18,7 @@ import { AuthService } from './auth/auth.service';
 import { PrismaService } from './common/prisma.service';
 import { LoggerService } from './common/logger.service';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -35,6 +36,9 @@ import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
         new EnhancedErrorFormatter(new LoggerService()).formatGraphQLError(
           error,
         ),
+    }),
+    CacheModule.register({
+      isGlobal: true,
     }),
     UserModule,
     PostModule,
