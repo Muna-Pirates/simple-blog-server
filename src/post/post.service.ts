@@ -9,40 +9,39 @@ import { UpdatePostInput } from './dto/update-post.input';
 import { PostSearchInput } from './dto/post-search.input';
 import { RoleType } from 'src/role/entities/role.entity';
 import { PaginationInput } from './dto/pagination.input';
+import { CacheService } from 'src/common/cache.service';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
 
-  private async findEntityOrThrow(
+  private async findEntityOrThrow<T extends PrismaPost | User>(
     entity: 'post' | 'user',
     where: Prisma.PostWhereUniqueInput | Prisma.UserWhereUniqueInput,
     errorMessage: string,
-  ): Promise<PrismaPost | User> {
+  ): Promise<T> {
+    let result;
     if (entity === 'post') {
-      const post = await this.prisma.post.findUnique({
+      result = await this.prisma.post.findUnique({
         where: where as Prisma.PostWhereUniqueInput,
       });
-      if (!post) throw new NotFoundException(errorMessage);
-      return post as PrismaPost;
-    } else {
-      const user = await this.prisma.user.findUnique({
+    } else if (entity === 'user') {
+      result = await this.prisma.user.findUnique({
         where: where as Prisma.UserWhereUniqueInput,
       });
-      if (!user) throw new NotFoundException(errorMessage);
-      return user as User;
     }
+    if (!result) throw new NotFoundException(errorMessage);
+    return result as T;
   }
 
   private async checkAuthorization(
-    post: PrismaPost | User,
+    post: PrismaPost,
     userId: number,
     roleId: number,
   ): Promise<void> {
-    if (!('title' in post && 'content' in post)) {
-      throw new Error('Invalid post object provided');
-    }
-
     if (post.authorId !== userId && roleId !== RoleType.ADMIN) {
       throw new UnauthorizedException('Unauthorized action on this post');
     }
@@ -51,10 +50,13 @@ export class PostService {
   async createPost(
     createPostInput: Prisma.PostCreateInput,
   ): Promise<PrismaPost> {
-    return this.prisma.post.create({
+    const newPost = await this.prisma.post.create({
       data: createPostInput,
       include: { author: true },
     });
+
+    await this.cacheService.del('posts_page_*');
+    return newPost;
   }
 
   private getPaginationDetails(pagination: PaginationInput) {
@@ -64,21 +66,42 @@ export class PostService {
   }
 
   async findAll(pagination: PaginationInput) {
+    const cacheKey = `posts_page_${pagination.page}`;
+    const cachedPosts = await this.cacheService.get<{
+      posts: PrismaPost[];
+      pagination: PaginationInput;
+    }>(cacheKey);
+    if (cachedPosts) return cachedPosts;
+
     const paginationDetails = this.getPaginationDetails(pagination);
-    const posts = await this.prisma.post.findMany({
-      ...paginationDetails,
-      include: { author: true, comments: true, category: true },
-    });
-    const totalItems = await this.prisma.post.count();
-    return { posts, pagination: { ...pagination, totalItems } };
+    const result = {
+      posts: await this.prisma.post.findMany({
+        ...paginationDetails,
+        include: { author: true, comments: true, category: true },
+      }),
+      pagination: {
+        ...pagination,
+        totalItems: await this.prisma.post.count(),
+      },
+    };
+
+    await this.cacheService.set(cacheKey, result, 60); // caching for 1 minute
+    return result;
   }
 
   async findOneById(postId: number): Promise<PrismaPost> {
-    return this.findEntityOrThrow(
+    const cacheKey = `post_${postId}`;
+    const cachedPost = await this.cacheService.get<PrismaPost>(cacheKey);
+    if (cachedPost) return cachedPost;
+
+    const post = await this.findEntityOrThrow<PrismaPost>(
       'post',
       { id: postId },
       `Post with ID ${postId} not found.`,
-    ) as Promise<PrismaPost>;
+    );
+
+    await this.cacheService.set(cacheKey, post, 120); // caching for 2 minutes
+    return post;
   }
 
   async updatePost(
@@ -86,56 +109,70 @@ export class PostService {
     updateData: UpdatePostInput,
     user: { id: number; roleId: number },
   ): Promise<PrismaPost> {
-    const post = await this.findEntityOrThrow(
-      'post',
-      { id: postId },
-      `Post with ID ${postId} not found.`,
-    );
-
-    // Type guard to ensure post is PrismaPost
-    if (!('title' in post && 'content' in post)) {
-      throw new Error('Invalid post object provided');
-    }
-
+    const post = await this.findOneById(postId);
     await this.checkAuthorization(post, user.id, user.roleId);
-    return this.prisma.post.update({
+
+    const updatedPost = await this.prisma.post.update({
       where: { id: postId },
       data: updateData,
       include: { author: true, comments: true, category: true },
     });
+
+    // Invalidate cache for this post and related listings
+    await this.cacheService.del(`post_${postId}`);
+    await this.cacheService.del('posts_page_*');
+    return updatedPost;
   }
 
   async deletePost(
     postId: number,
     user: { id: number; roleId: number },
   ): Promise<PrismaPost> {
-    const post = await this.findEntityOrThrow(
-      'post',
-      { id: postId },
-      `Post with ID ${postId} not found.`,
-    );
+    const post = await this.findOneById(postId);
     await this.checkAuthorization(post, user.id, user.roleId);
-    return this.prisma.post.delete({
+
+    const deletedPost = await this.prisma.post.delete({
       where: { id: postId },
       include: { author: true, comments: true, category: true },
     });
+
+    // Invalidate cache for this post and related listings
+    await this.cacheService.del(`post_${postId}`);
+    await this.cacheService.del('posts_page_*');
+    return deletedPost;
   }
 
   async searchPosts(criteria: PostSearchInput, pagination: PaginationInput) {
-    const { title, content, authorId } = criteria;
+    const cacheKey = `search_${JSON.stringify(criteria)}_page_${
+      pagination.page
+    }`;
+    const cachedSearch = await this.cacheService.get<{
+      posts: PrismaPost[];
+      pagination: PaginationInput;
+    }>(cacheKey);
+    if (cachedSearch) return cachedSearch;
+
     const paginationDetails = this.getPaginationDetails(pagination);
     const whereClause: Prisma.PostWhereInput = {
-      title: title ? { contains: title } : undefined,
-      content: content ? { contains: content } : undefined,
-      authorId: authorId || undefined,
+      title: criteria.title ? { contains: criteria.title } : undefined,
+      content: criteria.content ? { contains: criteria.content } : undefined,
+      authorId: criteria.authorId || undefined,
     };
-    const posts = await this.prisma.post.findMany({
-      where: whereClause,
-      ...paginationDetails,
-      include: { author: true, comments: true, category: true },
-    });
-    const totalItems = await this.prisma.post.count({ where: whereClause });
-    return { posts, pagination: { ...pagination, totalItems } };
+
+    const result = {
+      posts: await this.prisma.post.findMany({
+        where: whereClause,
+        ...paginationDetails,
+        include: { author: true, comments: true, category: true },
+      }),
+      pagination: {
+        ...pagination,
+        totalItems: await this.prisma.post.count({ where: whereClause }),
+      },
+    };
+
+    await this.cacheService.set(cacheKey, result, 60); // caching for 1 minute
+    return result;
   }
 
   async assignCategoryToPost(
@@ -150,7 +187,7 @@ export class PostService {
   }
 
   async getUserPosts(userId: number): Promise<PrismaPost[]> {
-    const user = await this.findEntityOrThrow(
+    const user = await this.findEntityOrThrow<User>(
       'user',
       { id: userId },
       `User with ID ${userId} not found.`,
