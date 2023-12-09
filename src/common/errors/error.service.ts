@@ -13,7 +13,9 @@ export class ErrorService {
       case 'AuthorizationError':
         return ErrorCode.AUTHORIZATION_ERROR;
       case 'PrismaClientKnownRequestError':
-        return this.handlePrismaError(internalError as PrismaClientKnownRequestError);
+        return this.handlePrismaError(
+          internalError as PrismaClientKnownRequestError,
+        );
       case 'GraphQLQueryError':
         return ErrorCode.GRAPHQL_QUERY_ERROR;
       case 'GraphQLValidationFailed':
@@ -42,4 +44,5 @@ export class ErrorService {
       default:
         return ErrorCode.PRISMA_UNKNOWN_ERROR;
     }
+  }
 }
