@@ -26,6 +26,8 @@ export class EnhancedErrorFormatter {
 
     this.logErrorDetails(error, customErrorCode);
 
+    console.log('error', error);
+
     return {
       ...this.extractErrorDetails(error),
       message: this.formatErrorMessage(error.message, customErrorCode),
