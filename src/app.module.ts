@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ApolloDriverConfig, ApolloDriver } from '@nestjs/apollo';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { UserModule } from './user/user.module';
@@ -13,6 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
+import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
 
 @Module({
   imports: [
@@ -26,22 +27,7 @@ import { CategoryModule } from './category/category.module';
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: (err) => {
-        if (process.env.NODE_ENV === 'production') {
-          return {
-            message: err.message,
-            code: err.extensions?.originalError,
-            status: err.extensions?.status,
-          };
-        }
-
-        // TODO: DEV는 전부 보이게 하기
-        return {
-          message: err.message,
-          code: err.extensions?.originalError,
-          status: err.extensions?.status,
-        };
-      },
+      // formatError: EnhancedErrorFormatter,
     }),
     UserModule,
     PostModule,

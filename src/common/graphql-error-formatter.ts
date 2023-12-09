@@ -1,59 +1,43 @@
-// path/filename: /src/utils/formatGraphQLError.ts
-
 import { GraphQLError } from 'graphql';
+import { LoggerService } from './logger.service';
 
-interface CustomGraphQLErrorFormat {
-  message: string;
-  code: string;
-  locations?: { line: number; column: number }[];
-  path?: string[];
-}
+export class EnhancedErrorFormatter {
+  private logger: LoggerService;
 
-export const formatGraphQLError = (
-  error: GraphQLError,
-): CustomGraphQLErrorFormat => {
-  const message = error.message;
-  const code = determineErrorCode(error);
-
-  const locations = error.locations
-    ? error.locations.map((loc) => ({ line: loc.line, column: loc.column }))
-    : undefined;
-
-  const path = error.path ? error.path.map((p) => p.toString()) : undefined;
-
-  return { message, code, locations, path };
-};
-
-const determineErrorCode = (error: GraphQLError): string => {
-  // Check for a code in the error extensions
-  if (
-    typeof error.extensions?.exception === 'object' &&
-    'code' in error.extensions.exception
-  ) {
-    return (error.extensions.exception as any).code;
+  constructor(loggerService: LoggerService) {
+    this.logger = loggerService;
   }
 
-  // Error message patterns and corresponding codes
-  const errorPatterns = [
-    { pattern: 'Error finding user by email', code: 'USER_NOT_FOUND' },
-    { pattern: 'Email already exists', code: 'EMAIL_ALREADY_EXISTS' },
-    { pattern: 'Error creating user', code: 'USER_NOT_CREATED' },
-    { pattern: 'Error finding user by ID', code: 'USER_NOT_FOUND' },
-    { pattern: 'Error finding role by ID', code: 'ROLE_NOT_FOUND' },
-    { pattern: 'Error finding role by name', code: 'ROLE_NOT_FOUND' },
-    { pattern: 'Error finding roles', code: 'ROLES_NOT_FOUND' },
-    { pattern: 'Error finding users', code: 'USERS_NOT_FOUND' },
-    { pattern: 'Error finding users by role', code: 'USERS_NOT_FOUND' },
-    // Add additional patterns as needed
-  ];
+  public formatGraphQLError(error: GraphQLError) {
+    const { message, locations, path, extensions } = error;
 
-  // Determine the error code based on the message pattern
-  for (const { pattern, code } of errorPatterns) {
-    if (error.message.includes(pattern)) {
-      return code;
+    const customErrorCode = this.determineErrorCode(error);
+
+    this.logger.logError({
+      message,
+      locations,
+      path,
+      errorCode: customErrorCode,
+      originalError: error,
+    });
+
+    return {
+      message,
+      locations,
+      path,
+      code: customErrorCode,
+    };
+  }
+
+  private determineErrorCode(error: GraphQLError): string {
+    // Safely check if 'code' is present and is a string
+    const errorCode = error.extensions?.code;
+    if (typeof errorCode === 'string') {
+      return errorCode === 'INTERNAL_SERVER_ERROR'
+        ? 'BUSINESS_CRITICAL_ERROR'
+        : errorCode;
     }
-  }
 
-  // Default error code
-  return 'GENERIC_ERROR';
-};
+    return 'UNHANDLED_ERROR';
+  }
+}
