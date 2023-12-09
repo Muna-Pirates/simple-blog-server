@@ -49,6 +49,7 @@ import { CacheService } from './common/cache.service';
         max: parseInt(configService.get<string>('CACHE_MAX'), 10),
       }),
       inject: [ConfigService],
+      isGlobal: true,
     }),
     UserModule,
     PostModule,
@@ -65,5 +66,6 @@ import { CacheService } from './common/cache.service';
     LoggerService,
     CacheService,
   ],
+  exports: [PrismaService, LoggerService, CacheService],
 })
 export class AppModule {}
