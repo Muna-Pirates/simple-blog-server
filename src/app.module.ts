@@ -14,6 +14,8 @@ import { RoleModule } from './role/role.module';
 import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
+import { LoggerService } from './common/logger.service';
+import { GraphQLError, GraphQLFormattedError } from 'graphql';
 
 @Module({
   imports: [
@@ -27,7 +29,15 @@ import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
       subscriptions: {
         'graphql-ws': true,
       },
-      // formatError: EnhancedErrorFormatter,
+      formatError: (error: GraphQLFormattedError | GraphQLError) => {
+        if (error instanceof GraphQLError) {
+          return new EnhancedErrorFormatter(
+            new LoggerService(),
+          ).formatGraphQLError(error);
+        } else {
+          return error;
+        }
+      },
     }),
     UserModule,
     PostModule,

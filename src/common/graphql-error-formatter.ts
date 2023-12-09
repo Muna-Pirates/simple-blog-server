@@ -30,7 +30,6 @@ export class EnhancedErrorFormatter {
   }
 
   private determineErrorCode(error: GraphQLError): string {
-    // Safely check if 'code' is present and is a string
     const errorCode = error.extensions?.code;
     if (typeof errorCode === 'string') {
       return errorCode === 'INTERNAL_SERVER_ERROR'
