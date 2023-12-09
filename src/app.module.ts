@@ -17,6 +17,7 @@ import { LoggerService } from './common/logger.service';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
 import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
 import { AuthService } from './auth/auth.service';
+import { CacheService } from './common/cache.service';
 
 @Global()
 @Module({
@@ -30,10 +31,12 @@ import { AuthService } from './auth/auth.service';
       useFactory: (configService: ConfigService) => ({
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         subscriptions: { 'graphql-ws': true },
-        formatError: (error: GraphQLError) =>
-          new EnhancedErrorFormatter(new LoggerService()).formatGraphQLError(
+        formatError: (error: GraphQLError) => {
+          const loggerService = new LoggerService();
+          return new EnhancedErrorFormatter(loggerService).formatGraphQLError(
             error,
-          ),
+          );
+        },
       }),
       inject: [ConfigService],
     }),
@@ -41,9 +44,9 @@ import { AuthService } from './auth/auth.service';
       useFactory: async (
         configService: ConfigService,
       ): Promise<CacheModuleOptions> => ({
-        store: configService.get('CACHE_STORE'),
-        ttl: parseInt(configService.get('CACHE_TTL')),
-        max: parseInt(configService.get('CACHE_MAX')),
+        store: configService.get<string>('CACHE_STORE'),
+        ttl: parseInt(configService.get<string>('CACHE_TTL'), 10),
+        max: parseInt(configService.get<string>('CACHE_MAX'), 10),
       }),
       inject: [ConfigService],
     }),
@@ -55,6 +58,12 @@ import { AuthService } from './auth/auth.service';
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService, PrismaService, LoggerService],
+  providers: [
+    AppService,
+    AuthService,
+    PrismaService,
+    LoggerService,
+    CacheService,
+  ],
 })
 export class AppModule {}
