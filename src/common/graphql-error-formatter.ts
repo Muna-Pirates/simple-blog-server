@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { LoggerService } from './logger.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-type PrismaErrorCode = 'P2002' | 'P2003'; // Extend as needed
+type PrismaErrorCode = 'P2002' | 'P2003';
 type ErrorCode =
   | 'UNIQUE_CONSTRAINT_FAILED'
   | 'FOREIGN_KEY_CONSTRAINT_FAILED'
@@ -14,7 +14,6 @@ export class EnhancedErrorFormatter {
   private prismaErrorMapping: Record<PrismaErrorCode, ErrorCode> = {
     P2002: 'UNIQUE_CONSTRAINT_FAILED',
     P2003: 'FOREIGN_KEY_CONSTRAINT_FAILED',
-    // Add more detailed Prisma error mappings here
   };
 
   constructor(private logger: LoggerService) {}

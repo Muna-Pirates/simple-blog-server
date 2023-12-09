@@ -48,7 +48,6 @@ export class UserService {
       const cacheKey = `user:${field}:${value}`;
       const cachedUser = await this.cacheService.get<User>(cacheKey);
       if (cachedUser) {
-        // Exclude sensitive data from the cached user
         const { password, ...userWithoutPassword } = cachedUser;
         return userWithoutPassword;
       }
@@ -110,7 +109,6 @@ export class UserService {
 
   async findById(id: number): Promise<UserWithoutPassword | null> {
     try {
-      // Utilize findUserByUniqueField for consistency
       return await this.findUserByUniqueField('id', id);
     } catch (error) {
       this.logger.error(
@@ -148,7 +146,6 @@ export class UserService {
 
   async delete(id: number): Promise<User> {
     try {
-      // Perform necessary pre-delete checks or operations here
       return await this.prisma.user.delete({ where: { id } });
     } catch (error) {
       this.logger.error(
@@ -163,7 +160,6 @@ export class UserService {
 
   async getRole(roleId: number): Promise<Role | null> {
     try {
-      // Ensure efficient and secure retrieval of role information
       return await this.prisma.role.findUnique({ where: { id: roleId } });
     } catch (error) {
       this.logger.error(
@@ -177,7 +173,6 @@ export class UserService {
   }
 
   async getDefaultRole(): Promise<Role | null> {
-    // Utilize getRole for consistency and maintainability
     return this.getRole(RoleType.USER);
   }
 }

@@ -1,6 +1,5 @@
 export class ErrorCodeService {
   private errorCodeMap: { [key: string]: string } = {
-    // Standard HTTP status codes
     OK: '200',
     CREATED: '201',
     ACCEPTED: '202',

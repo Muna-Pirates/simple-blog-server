@@ -20,33 +20,28 @@ export class HttpExceptionFilter
     const response: Response = context.res;
     const request: Request = context.req;
 
-    // Standardizing response format for both REST and GraphQL
     const { status, message } = exception.getResponse() as {
       status: number;
       message: string[] | string;
     };
 
-    // Enhanced error response format
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request?.url, // Extracting URL from REST or GraphQL request
+      path: request?.url,
       message: Array.isArray(message) ? message : [message],
     };
 
-    // Additional error logging
     this.logger.error({
       message: 'Exception caught',
       exception: errorResponse,
       context: request ? 'REST' : 'GraphQL',
     });
 
-    // For GraphQL requests, throw a formatted error
     if (!response) {
       throw new HttpException(errorResponse, status);
     }
 
-    // For REST requests, send a formatted response
     response.status(status).json(errorResponse);
   }
 }

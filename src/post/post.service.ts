@@ -118,7 +118,6 @@ export class PostService {
       include: { author: true, comments: true, category: true },
     });
 
-    // Invalidate cache for this post and related listings
     await this.cacheService.del(`post_${postId}`);
     await this.cacheService.del('posts_page_*');
     return updatedPost;
@@ -136,7 +135,6 @@ export class PostService {
       include: { author: true, comments: true, category: true },
     });
 
-    // Invalidate cache for this post and related listings
     await this.cacheService.del(`post_${postId}`);
     await this.cacheService.del('posts_page_*');
     return deletedPost;
