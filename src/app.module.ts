@@ -1,21 +1,23 @@
 import { Module } from '@nestjs/common';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { ConfigModule } from '@nestjs/config';
+import { join } from 'path';
+import { GraphQLError } from 'graphql';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { GraphQLModule } from '@nestjs/graphql';
-import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
-import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
 import { RoleModule } from './role/role.module';
-import { PrismaService } from './common/prisma.service';
 import { CategoryModule } from './category/category.module';
-import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
+import { AuthService } from './auth/auth.service';
+
+import { PrismaService } from './common/prisma.service';
 import { LoggerService } from './common/logger.service';
-import { GraphQLError, GraphQLFormattedError } from 'graphql';
+import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
 
 @Module({
   imports: [
@@ -29,15 +31,10 @@ import { GraphQLError, GraphQLFormattedError } from 'graphql';
       subscriptions: {
         'graphql-ws': true,
       },
-      formatError: (error: GraphQLFormattedError | GraphQLError) => {
-        if (error instanceof GraphQLError) {
-          return new EnhancedErrorFormatter(
-            new LoggerService(),
-          ).formatGraphQLError(error);
-        } else {
-          return error;
-        }
-      },
+      formatError: (error: GraphQLError) =>
+        new EnhancedErrorFormatter(new LoggerService()).formatGraphQLError(
+          error,
+        ),
     }),
     UserModule,
     PostModule,
