@@ -1,10 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { GraphQLError } from 'graphql';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -13,32 +12,41 @@ import { CommentModule } from './comment/comment.module';
 import { AuthModule } from './auth/auth.module';
 import { RoleModule } from './role/role.module';
 import { CategoryModule } from './category/category.module';
-import { AuthService } from './auth/auth.service';
-
 import { PrismaService } from './common/prisma.service';
 import { LoggerService } from './common/logger.service';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
-import { CacheModule } from '@nestjs/cache-manager';
+import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
+import { AuthService } from './auth/auth.service';
 
+@Global()
 @Module({
   imports: [
     ConfigModule.forRoot({
       envFilePath: '.env',
       isGlobal: true,
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      subscriptions: {
-        'graphql-ws': true,
-      },
-      formatError: (error: GraphQLError) =>
-        new EnhancedErrorFormatter(new LoggerService()).formatGraphQLError(
-          error,
-        ),
+      useFactory: (configService: ConfigService) => ({
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        subscriptions: { 'graphql-ws': true },
+        formatError: (error: GraphQLError) =>
+          new EnhancedErrorFormatter(
+            new LoggerService(configService),
+          ).formatGraphQLError(error),
+      }),
+      inject: [ConfigService],
     }),
-    CacheModule.register({
-      isGlobal: true,
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (
+        configService: ConfigService,
+      ): Promise<CacheModuleOptions> => ({
+        store: configService.get('CACHE_STORE'),
+        ttl: parseInt(configService.get('CACHE_TTL')),
+        max: parseInt(configService.get('CACHE_MAX')),
+      }),
+      inject: [ConfigService],
     }),
     UserModule,
     PostModule,
@@ -48,6 +56,6 @@ import { CacheModule } from '@nestjs/cache-manager';
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService, PrismaService],
+  providers: [AppService, AuthService, PrismaService, LoggerService],
 })
 export class AppModule {}
