@@ -4,14 +4,11 @@ import {
   InternalServerErrorException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, Role, User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { RoleType } from 'src/role/entities/role.entity';
-import { CacheService } from 'src/common/cache.service';
 import { PasswordService } from 'src/common/password.service';
-import { RoleService } from 'src/role/role.service';
 import { UserCacheService } from './user-cache.service';
+import { RoleService } from 'src/role/role.service';
 
 enum UserField {
   Email = 'email',
@@ -31,31 +28,15 @@ export class UserService {
     private userCacheService: UserCacheService,
   ) {}
 
-  private async connectRole(
-    roleConnectInput: Prisma.RoleCreateNestedOneWithoutUsersInput,
-  ): Promise<Prisma.RoleCreateNestedOneWithoutUsersInput | undefined> {
-    if (!roleConnectInput) return undefined;
-    const roleId = roleConnectInput.connect?.id || RoleType.USER;
-    return { connect: { id: roleId } };
-  }
-
-  private async hashPassword(password: string): Promise<string> {
-    try {
-      const salt = await bcrypt.genSalt(this.saltRounds);
-      return await bcrypt.hash(password, salt);
-    } catch (error) {
-      this.logger.error('Error hashing password', error.stack);
-      throw new InternalServerErrorException('Error processing password');
-    }
-  }
-
   private async findUserByUniqueField(
     field: UserField,
     value: string | number,
   ): Promise<UserWithoutPassword | null> {
     try {
-      const cacheKey = `user:${field}:${value}`;
-      const cachedUser = await this.cacheService.get<User>(cacheKey);
+      const cachedUser = await this.userCacheService.getCachedUser(
+        field,
+        value,
+      );
       if (cachedUser) {
         const { password, ...userWithoutPassword } = cachedUser;
         return userWithoutPassword;
@@ -73,10 +54,11 @@ export class UserService {
 
       if (user) {
         const { password, ...userWithoutPassword } = user;
-        await this.cacheService.set(cacheKey, userWithoutPassword);
+        await this.userCacheService.setCachedUser(user);
+        return userWithoutPassword;
       }
 
-      return user;
+      return null;
     } catch (error) {
       this.logger.error(
         `Error finding user by ${field}: ${error.message}`,
@@ -91,30 +73,30 @@ export class UserService {
   }
 
   async create(userData: Prisma.UserCreateInput): Promise<UserWithoutPassword> {
-    try {
-      if (!userData.password) {
-        throw new BadRequestException('Password is required');
-      }
-
-      const hashedPassword = await this.hashPassword(userData.password);
-
-      const newUser: Prisma.UserCreateInput = {
-        ...userData,
-        password: hashedPassword,
-        role: await this.connectRole(userData.role),
-      };
-
-      const createdUser = await this.prisma.user.create({
-        data: newUser,
-        include: { role: true },
-      });
-
-      const { password, ...userWithoutPassword } = createdUser;
-      return userWithoutPassword;
-    } catch (error) {
-      this.logger.error('Error creating user: ' + error.message, error.stack);
-      throw new InternalServerErrorException('Failed to create user');
+    if (!userData.password) {
+      throw new BadRequestException('Password is required');
     }
+
+    const hashedPassword = await this.passwordService.hashPassword(
+      userData.password,
+    );
+    const roleConnection = await this.roleService.connectRole(userData.role);
+
+    const newUser: Prisma.UserCreateInput = {
+      ...userData,
+      password: hashedPassword,
+      role: roleConnection,
+    };
+
+    const createdUser = await this.prisma.user.create({
+      data: newUser,
+      include: { role: true },
+    });
+
+    const { password, ...userWithoutPassword } = createdUser;
+    // Cache the user with password, as required by the UserCacheService
+    await this.userCacheService.setCachedUser(createdUser);
+    return userWithoutPassword;
   }
 
   async findById(id: number): Promise<UserWithoutPassword | null> {
@@ -125,66 +107,34 @@ export class UserService {
     id: number,
     updateData: Prisma.UserUpdateInput,
   ): Promise<UserWithoutPassword> {
-    try {
-      if (typeof updateData.password === 'string') {
-        updateData.password = await this.hashPassword(updateData.password);
-      }
-
-      const updatedUser = {
-        ...updateData,
-        role: await this.connectRole(updateData.role),
-      };
-
-      const user = await this.prisma.user.update({
-        where: { id },
-        data: updatedUser,
-        include: { role: true },
-      });
-
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    } catch (error) {
-      this.logger.error(
-        `Error updating user with ID ${id}: ${error.message}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        `Failed to update user with ID ${id}`,
+    if (typeof updateData.password === 'string') {
+      updateData.password = await this.passwordService.hashPassword(
+        updateData.password,
       );
     }
+
+    const roleConnection = await this.roleService.connectRole(updateData.role);
+
+    const updatedUser = {
+      ...updateData,
+      role: roleConnection,
+    };
+
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: updatedUser,
+      include: { role: true },
+    });
+
+    const { password, ...userWithoutPassword } = user;
+    // Cache the user with password, as required by the UserCacheService
+    await this.userCacheService.setCachedUser(user);
+    return userWithoutPassword;
   }
 
   async delete(id: number): Promise<UserWithoutPassword> {
-    try {
-      const deletedUser = await this.prisma.user.delete({ where: { id } });
-      const { password, ...userWithoutPassword } = deletedUser;
-      return userWithoutPassword;
-    } catch (error) {
-      this.logger.error(
-        `Error deleting user with ID ${id}: ${error.message}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        `Failed to delete user with ID ${id}`,
-      );
-    }
-  }
-
-  async getRole(roleId: number): Promise<Role | null> {
-    try {
-      return await this.prisma.role.findUnique({ where: { id: roleId } });
-    } catch (error) {
-      this.logger.error(
-        `Error retrieving role with ID ${roleId}: ${error.message}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        `Failed to retrieve role with ID ${roleId}`,
-      );
-    }
-  }
-
-  async getDefaultRole(): Promise<Role | null> {
-    return this.getRole(RoleType.USER);
+    const deletedUser = await this.prisma.user.delete({ where: { id } });
+    const { password, ...userWithoutPassword } = deletedUser;
+    return userWithoutPassword;
   }
 }

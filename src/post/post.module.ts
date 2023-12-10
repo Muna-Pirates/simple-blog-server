@@ -6,6 +6,9 @@ import { UserService } from '../user/user.service';
 import { CommentService } from '../comment/comment.service';
 import { CategoryService } from '../category/category.service';
 import { ErrorService } from '../common/errors/error.service';
+import { PasswordService } from 'src/common/password.service';
+import { RoleService } from 'src/role/role.service';
+import { UserCacheService } from 'src/user/user-cache.service';
 
 @Module({
   providers: [
@@ -16,6 +19,9 @@ import { ErrorService } from '../common/errors/error.service';
     CommentService,
     CategoryService,
     ErrorService,
+    PasswordService,
+    RoleService,
+    UserCacheService,
   ],
 })
 export class PostModule {}
