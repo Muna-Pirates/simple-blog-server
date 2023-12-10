@@ -68,6 +68,11 @@ type Role {
   users: [User!]!
 }
 
+type AuthPayload {
+  user: User!
+  token: String!
+}
+
 type PaginationInfo {
   page: Int!
   pageSize: Int!
@@ -80,6 +85,8 @@ type PostPaginationResult {
 }
 
 type Query {
+  viewUserProfile: User
+
   """포스트 목록을 페이징하여 반환합니다."""
   listPosts(pagination: PaginationInput!): PostPaginationResult!
 
@@ -106,6 +113,11 @@ input PostSearchInput {
 }
 
 type Mutation {
+  registerUser(createUserInput: CreateUserInput!): User!
+  loginUser(credentials: LoginInput!): AuthPayload!
+  updateUserProfile(updateData: UpdateUserInput!): User!
+  deleteUser(id: Int!): User!
+
   """새로운 포스트를 생성합니다."""
   createPost(createPostInput: CreatePostInput!): Post!
 
@@ -121,6 +133,24 @@ type Mutation {
   updateComment(updateCommentInput: UpdateCommentInput!): Comment!
   deleteComment(commentId: Int!): Comment!
   createCategory(createCategoryInput: CreateCategoryInput!): Category!
+}
+
+input CreateUserInput {
+  email: String!
+  password: String!
+  name: String
+  roleId: Int
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  id: Int!
+  email: String
+  name: String
 }
 
 input CreatePostInput {
