@@ -1,7 +1,10 @@
+// path/filename: EnhancedErrorFormatter.ts
 import { GraphQLError } from 'graphql';
 import { LoggerService } from './logger.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { errorMessages } from './errors/errorMessages';
 
+// Refine error code types
 type PrismaErrorCode = 'P2002' | 'P2003';
 type ErrorCode =
   | 'UNIQUE_CONSTRAINT_FAILED'
@@ -20,12 +23,9 @@ export class EnhancedErrorFormatter {
 
   public formatGraphQLError(error: GraphQLError): any {
     const customErrorCode = this.determineErrorCode(error);
-    const userFriendlyMessage =
-      this.generateUserFriendlyMessage(customErrorCode);
+    const userFriendlyMessage = errorMessages[customErrorCode];
 
     this.logErrorDetails(error, customErrorCode);
-
-    console.log('error', error);
 
     return {
       ...this.extractErrorDetails(error),
@@ -64,19 +64,6 @@ export class EnhancedErrorFormatter {
     return errorCode === 'BUSINESS_CRITICAL_ERROR'
       ? `Critical: ${message}`
       : message;
-  }
-
-  private generateUserFriendlyMessage(errorCode: ErrorCode): string {
-    switch (errorCode) {
-      case 'UNIQUE_CONSTRAINT_FAILED':
-        return 'A unique constraint was violated. Please verify your input.';
-      case 'FOREIGN_KEY_CONSTRAINT_FAILED':
-        return 'A foreign key constraint was violated. Please check related records.';
-      case 'DATABASE_ERROR':
-        return 'A database error occurred. We are working to resolve this issue.';
-      default:
-        return 'An unexpected error occurred. Our team is looking into it.';
-    }
   }
 
   private extractErrorDetails(error: GraphQLError) {
