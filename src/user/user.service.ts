@@ -9,6 +9,9 @@ import { PrismaService } from 'src/common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
 import { CacheService } from 'src/common/cache.service';
+import { PasswordService } from 'src/common/password.service';
+import { RoleService } from 'src/role/role.service';
+import { UserCacheService } from './user-cache.service';
 
 enum UserField {
   Email = 'email',
@@ -20,11 +23,12 @@ type UserWithoutPassword = Omit<User, 'password'>;
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
-  private readonly saltRounds = 12;
 
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
+    private passwordService: PasswordService,
+    private roleService: RoleService,
+    private userCacheService: UserCacheService,
   ) {}
 
   private async connectRole(
