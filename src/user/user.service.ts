@@ -3,6 +3,7 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -52,13 +53,13 @@ export class UserService {
         include: { role: true },
       });
 
-      if (user) {
-        const { password, ...userWithoutPassword } = user;
-        await this.userCacheService.setCachedUser(user);
-        return userWithoutPassword;
+      if (!user) {
+        throw new NotFoundException(`User with ${field}: ${value} not found`);
       }
 
-      return null;
+      const { password, ...userWithoutPassword } = user;
+      await this.userCacheService.setCachedUser(user);
+      return userWithoutPassword;
     } catch (error) {
       this.logger.error(
         `Error finding user by ${field}: ${error.message}`,
@@ -88,14 +89,19 @@ export class UserService {
       role: roleConnection,
     };
 
-    const createdUser = await this.prisma.user.create({
-      data: newUser,
-      include: { role: true },
-    });
+    try {
+      const createdUser = await this.prisma.user.create({
+        data: newUser,
+        include: { role: true },
+      });
 
-    const { password, ...userWithoutPassword } = createdUser;
-    await this.userCacheService.setCachedUser(createdUser);
-    return userWithoutPassword;
+      const { password, ...userWithoutPassword } = createdUser;
+      await this.userCacheService.setCachedUser(createdUser);
+      return userWithoutPassword;
+    } catch (error) {
+      this.logger.error(`Error creating user: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to create user');
+    }
   }
 
   async findById(id: number): Promise<UserWithoutPassword | null> {
@@ -119,20 +125,34 @@ export class UserService {
       role: roleConnection,
     };
 
-    const user = await this.prisma.user.update({
-      where: { id },
-      data: updatedUser,
-      include: { role: true },
-    });
+    try {
+      const user = await this.prisma.user.update({
+        where: { id },
+        data: updatedUser,
+        include: { role: true },
+      });
 
-    const { password, ...userWithoutPassword } = user;
-    await this.userCacheService.setCachedUser(user);
-    return userWithoutPassword;
+      if (!user) {
+        throw new NotFoundException(`User with ID: ${id} not found`);
+      }
+
+      const { password, ...userWithoutPassword } = user;
+      await this.userCacheService.setCachedUser(user);
+      return userWithoutPassword;
+    } catch (error) {
+      this.logger.error(`Error updating user: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to update user');
+    }
   }
 
   async delete(id: number): Promise<UserWithoutPassword> {
-    const deletedUser = await this.prisma.user.delete({ where: { id } });
-    const { password, ...userWithoutPassword } = deletedUser;
-    return userWithoutPassword;
+    try {
+      const deletedUser = await this.prisma.user.delete({ where: { id } });
+      const { password, ...userWithoutPassword } = deletedUser;
+      return userWithoutPassword;
+    } catch (error) {
+      this.logger.error(`Error deleting user: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to delete user');
+    }
   }
 }
