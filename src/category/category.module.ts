@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CategoryResolver } from './category.resolver';
 import { CategoryService } from './category.service';
+import { PrismaModule } from 'src/prisma/prisma.module';
 import { PostModule } from 'src/post/post.module';
 
 @Module({
-  imports: [PostModule],
+  imports: [PrismaModule, forwardRef(() => PostModule)],
   providers: [CategoryResolver, CategoryService],
   exports: [CategoryService],
 })

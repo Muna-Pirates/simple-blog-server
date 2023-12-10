@@ -86,6 +86,7 @@ type PostPaginationResult {
 
 type Query {
   viewUserProfile: User
+  listComments(postId: Int!): [Comment!]!
 
   """포스트 목록을 페이징하여 반환합니다."""
   listPosts(pagination: PaginationInput!): PostPaginationResult!
@@ -98,7 +99,6 @@ type Query {
 
   """특정 카테고리에 속하는 포스트를 필터링합니다."""
   filterPostsByCategory(categoryId: Int!): [Post!]!
-  listComments(postId: Int!): [Comment!]!
 }
 
 input PaginationInput {
@@ -117,6 +117,9 @@ type Mutation {
   loginUser(credentials: LoginInput!): AuthPayload!
   updateUserProfile(updateData: UpdateUserInput!): User!
   deleteUser(id: Int!): User!
+  addComment(createCommentInput: CreateCommentInput!): Comment!
+  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
+  deleteComment(commentId: Int!): Comment!
 
   """새로운 포스트를 생성합니다."""
   createPost(createPostInput: CreatePostInput!): Post!
@@ -129,9 +132,6 @@ type Mutation {
 
   """포스트에 카테고리를 할당합니다."""
   assignCategoryToPost(postId: Int!, categoryId: Int!): Post!
-  addComment(createCommentInput: CreateCommentInput!): Comment!
-  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
-  deleteComment(commentId: Int!): Comment!
   createCategory(createCategoryInput: CreateCategoryInput!): Category!
 }
 
@@ -153,6 +153,16 @@ input UpdateUserInput {
   name: String
 }
 
+input CreateCommentInput {
+  postId: Int!
+  content: String!
+}
+
+input UpdateCommentInput {
+  id: Int!
+  content: String!
+}
+
 input CreatePostInput {
   title: String!
   content: String!
@@ -162,16 +172,6 @@ input CreatePostInput {
 input UpdatePostInput {
   title: String
   content: String
-}
-
-input CreateCommentInput {
-  postId: Int!
-  content: String!
-}
-
-input UpdateCommentInput {
-  id: Int!
-  content: String!
 }
 
 input CreateCategoryInput {

@@ -4,7 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
-import { PrismaService } from 'src/common/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { RoleType } from './entities/role.entity';
 
 @Injectable()

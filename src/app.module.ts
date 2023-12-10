@@ -14,6 +14,7 @@ import { LoggerService } from './common/logger.service';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
 import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
 import { CacheService } from './common/cache.service';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Global()
 @Module({
@@ -51,6 +52,7 @@ import { CacheService } from './common/cache.service';
     PostModule,
     CommentModule,
     CategoryModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService, LoggerService, CacheService],

@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { Category } from '@prisma/client';
 

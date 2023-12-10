@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
-import { PrismaService } from 'src/common/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/password.service';
 import { UserCacheService } from './user-cache.service';
 import { RoleService } from 'src/role/role.service';
