@@ -10,6 +10,11 @@ import * as bcrypt from 'bcrypt';
 import { RoleType } from 'src/role/entities/role.entity';
 import { CacheService } from 'src/common/cache.service';
 
+enum UserField {
+  Email = 'email',
+  Id = 'id',
+}
+
 type UserWithoutPassword = Omit<User, 'password'>;
 
 @Injectable()
@@ -41,7 +46,7 @@ export class UserService {
   }
 
   private async findUserByUniqueField(
-    field: 'email' | 'id',
+    field: UserField,
     value: string | number,
   ): Promise<UserWithoutPassword | null> {
     try {
@@ -52,12 +57,10 @@ export class UserService {
         return userWithoutPassword;
       }
 
-      let whereCondition: Prisma.UserWhereUniqueInput;
-      if (field === 'email') {
-        whereCondition = { email: value as string };
-      } else {
-        whereCondition = { id: value as number };
-      }
+      const whereCondition: Prisma.UserWhereUniqueInput =
+        field === UserField.Email
+          ? { email: value as string }
+          : { id: value as number };
 
       const user = await this.prisma.user.findUnique({
         where: whereCondition,
@@ -72,7 +75,7 @@ export class UserService {
       return user;
     } catch (error) {
       this.logger.error(
-        `Error finding user by ${field}: ` + error.message,
+        `Error finding user by ${field}: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(`Failed to find user by ${field}`);
@@ -80,10 +83,10 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<UserWithoutPassword | null> {
-    return this.findUserByUniqueField('email', email);
+    return this.findUserByUniqueField(UserField.Email, email);
   }
 
-  async create(userData: Prisma.UserCreateInput): Promise<User> {
+  async create(userData: Prisma.UserCreateInput): Promise<UserWithoutPassword> {
     try {
       if (!userData.password) {
         throw new BadRequestException('Password is required');
@@ -97,10 +100,13 @@ export class UserService {
         role: await this.connectRole(userData.role),
       };
 
-      return await this.prisma.user.create({
+      const createdUser = await this.prisma.user.create({
         data: newUser,
         include: { role: true },
       });
+
+      const { password, ...userWithoutPassword } = createdUser;
+      return userWithoutPassword;
     } catch (error) {
       this.logger.error('Error creating user: ' + error.message, error.stack);
       throw new InternalServerErrorException('Failed to create user');
@@ -108,34 +114,34 @@ export class UserService {
   }
 
   async findById(id: number): Promise<UserWithoutPassword | null> {
-    try {
-      return await this.findUserByUniqueField('id', id);
-    } catch (error) {
-      this.logger.error(
-        `Error finding user with ID ${id}: ` + error.message,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        `Failed to find user with ID ${id}`,
-      );
-    }
+    return this.findUserByUniqueField(UserField.Id, id);
   }
 
-  async update(id: number, updateData: Prisma.UserUpdateInput): Promise<User> {
+  async update(
+    id: number,
+    updateData: Prisma.UserUpdateInput,
+  ): Promise<UserWithoutPassword> {
     try {
+      if (typeof updateData.password === 'string') {
+        updateData.password = await this.hashPassword(updateData.password);
+      }
+
       const updatedUser = {
         ...updateData,
         role: await this.connectRole(updateData.role),
       };
 
-      return await this.prisma.user.update({
+      const user = await this.prisma.user.update({
         where: { id },
         data: updatedUser,
         include: { role: true },
       });
+
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
     } catch (error) {
       this.logger.error(
-        `Error updating user with ID ${id}: ` + error.message,
+        `Error updating user with ID ${id}: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(
@@ -144,12 +150,14 @@ export class UserService {
     }
   }
 
-  async delete(id: number): Promise<User> {
+  async delete(id: number): Promise<UserWithoutPassword> {
     try {
-      return await this.prisma.user.delete({ where: { id } });
+      const deletedUser = await this.prisma.user.delete({ where: { id } });
+      const { password, ...userWithoutPassword } = deletedUser;
+      return userWithoutPassword;
     } catch (error) {
       this.logger.error(
-        `Error deleting user with ID ${id}: ` + error.message,
+        `Error deleting user with ID ${id}: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(
@@ -163,7 +171,7 @@ export class UserService {
       return await this.prisma.role.findUnique({ where: { id: roleId } });
     } catch (error) {
       this.logger.error(
-        `Error retrieving role with ID ${roleId}: ` + error.message,
+        `Error retrieving role with ID ${roleId}: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(
