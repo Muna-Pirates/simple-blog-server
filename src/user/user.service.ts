@@ -94,7 +94,6 @@ export class UserService {
     });
 
     const { password, ...userWithoutPassword } = createdUser;
-    // Cache the user with password, as required by the UserCacheService
     await this.userCacheService.setCachedUser(createdUser);
     return userWithoutPassword;
   }
@@ -127,7 +126,6 @@ export class UserService {
     });
 
     const { password, ...userWithoutPassword } = user;
-    // Cache the user with password, as required by the UserCacheService
     await this.userCacheService.setCachedUser(user);
     return userWithoutPassword;
   }
