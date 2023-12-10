@@ -9,14 +9,10 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
-import { AuthModule } from './auth/auth.module';
-import { RoleModule } from './role/role.module';
 import { CategoryModule } from './category/category.module';
-import { PrismaService } from './common/prisma.service';
 import { LoggerService } from './common/logger.service';
 import { EnhancedErrorFormatter } from './common/graphql-error-formatter';
 import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
-import { AuthService } from './auth/auth.service';
 import { CacheService } from './common/cache.service';
 
 @Global()
@@ -54,18 +50,10 @@ import { CacheService } from './common/cache.service';
     UserModule,
     PostModule,
     CommentModule,
-    AuthModule,
-    RoleModule,
     CategoryModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    AuthService,
-    PrismaService,
-    LoggerService,
-    CacheService,
-  ],
-  exports: [PrismaService, LoggerService, CacheService],
+  providers: [AppService, LoggerService, CacheService],
+  exports: [LoggerService, CacheService],
 })
 export class AppModule {}

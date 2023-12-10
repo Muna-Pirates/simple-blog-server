@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { CategoryResolver } from './category.resolver';
 import { CategoryService } from './category.service';
-import { PrismaService } from 'src/common/prisma.service';
-import { PostService } from 'src/post/post.service';
+import { PostModule } from 'src/post/post.module';
 
 @Module({
-  providers: [CategoryResolver, CategoryService, PrismaService, PostService],
+  imports: [PostModule],
+  providers: [CategoryResolver, CategoryService],
+  exports: [CategoryService],
 })
 export class CategoryModule {}
