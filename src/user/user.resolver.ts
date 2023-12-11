@@ -50,6 +50,8 @@ export class UserResolver {
       throw new NotFoundException('Role not found.');
     }
 
+    delete createUserInput.roleId;
+
     const userCreateInput = {
       ...createUserInput,
       password: createUserInput.password,
