@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import helmet from 'helmet';
-import { HttpExceptionFilter } from './common/filters/global-exception.filter';
 
 const prisma = new PrismaClient();
 
@@ -30,7 +29,7 @@ async function bootstrap() {
 
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
-      origin: '*',
+      origin: 'http://localhost:7777, https://www.xiubin.dev',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,
     });
