@@ -1,17 +1,18 @@
-// path/filename: EnhancedErrorFormatter.ts
 import { GraphQLError } from 'graphql';
+import { ValidationError } from 'class-validator';
 import { LoggerService } from './logger.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { errorMessages } from './errors/errorMessages';
 
-// Refine error code types
+type ClassValidatorErrorCode = 'VALIDATION_FAILED';
 type PrismaErrorCode = 'P2002' | 'P2003';
 type ErrorCode =
   | 'UNIQUE_CONSTRAINT_FAILED'
   | 'FOREIGN_KEY_CONSTRAINT_FAILED'
   | 'DATABASE_ERROR'
   | 'BUSINESS_CRITICAL_ERROR'
-  | 'UNHANDLED_ERROR';
+  | 'UNHANDLED_ERROR'
+  | ClassValidatorErrorCode;
 
 export class EnhancedErrorFormatter {
   private prismaErrorMapping: Record<PrismaErrorCode, ErrorCode> = {
@@ -36,14 +37,17 @@ export class EnhancedErrorFormatter {
   }
 
   private determineErrorCode(error: GraphQLError): ErrorCode {
+    if (error.originalError instanceof ValidationError) {
+      return 'VALIDATION_FAILED';
+    } else if (error.originalError instanceof PrismaClientKnownRequestError) {
+      return this.mapPrismaErrorCode(error.originalError.code);
+    }
+
     const errorCode =
       typeof error.extensions?.code === 'string'
         ? error.extensions.code
         : undefined;
 
-    if (error.originalError instanceof PrismaClientKnownRequestError) {
-      return this.mapPrismaErrorCode(error.originalError.code);
-    }
     return this.isInternalError(errorCode)
       ? 'BUSINESS_CRITICAL_ERROR'
       : 'UNHANDLED_ERROR';
