@@ -33,7 +33,7 @@ async function bootstrap() {
         const allowedOrigins = [
           'http://localhost:7777',
           'https://www.xiubin.dev',
-          'https://simple-blog.munawiki.dev/graphql',
+          'https://simple-blog.munawiki.dev',
         ];
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
           callback(null, true);
