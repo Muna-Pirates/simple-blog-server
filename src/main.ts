@@ -29,7 +29,17 @@ async function bootstrap() {
 
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
-      origin: 'http://localhost:7777,https://www.xiubin.dev',
+      origin: function (origin, callback) {
+        const allowedOrigins = [
+          'http://localhost:7777',
+          'https://www.xiubin.dev',
+        ];
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,
     });
