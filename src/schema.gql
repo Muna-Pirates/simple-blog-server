@@ -99,6 +99,7 @@ type Query {
 
   """특정 카테고리에 속하는 포스트를 필터링합니다."""
   filterPostsByCategory(categoryId: Int!): [Post!]!
+  findCategoryByName(name: String!): Category
 }
 
 input PaginationInput {

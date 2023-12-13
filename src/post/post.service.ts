@@ -148,14 +148,24 @@ export class PostService {
       posts: PrismaPost[];
       pagination: PaginationInput;
     }>(cacheKey);
+
     if (cachedSearch) return cachedSearch;
 
     const paginationDetails = this.getPaginationDetails(pagination);
-    const whereClause: Prisma.PostWhereInput = {
-      title: criteria.title ? { contains: criteria.title } : undefined,
-      content: criteria.content ? { contains: criteria.content } : undefined,
-      authorId: criteria.authorId || undefined,
-    };
+
+    const orConditions = [];
+    if (criteria.title) {
+      orConditions.push({ title: { contains: criteria.title } });
+    }
+    if (criteria.content) {
+      orConditions.push({ content: { contains: criteria.content } });
+    }
+    if (criteria.authorId) {
+      orConditions.push({ authorId: criteria.authorId });
+    }
+
+    const whereClause: Prisma.PostWhereInput =
+      orConditions.length > 0 ? { OR: orConditions } : {};
 
     const result = {
       posts: await this.prisma.post.findMany({
