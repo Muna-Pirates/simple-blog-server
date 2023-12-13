@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryInput } from './dto/create-category.input';
 import { Category } from '@prisma/client';
@@ -42,6 +46,23 @@ export class CategoryService {
       return category;
     } catch (error) {
       console.error('Error finding category by post id:', error);
+      throw error;
+    }
+  }
+
+  async findCategoryByName(name: string): Promise<Category> {
+    try {
+      const category = await this.prisma.category.findUnique({
+        where: { name },
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Category with name '${name}' not found`);
+      }
+
+      return category;
+    } catch (error) {
+      console.error('Error finding category by name:', error);
       throw error;
     }
   }

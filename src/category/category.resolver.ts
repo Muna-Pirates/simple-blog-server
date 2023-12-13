@@ -2,6 +2,7 @@ import {
   Args,
   Mutation,
   Parent,
+  Query,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
@@ -27,6 +28,18 @@ export class CategoryResolver {
     @Args('createCategoryInput') createCategoryInput: CreateCategoryInput,
   ) {
     return this.categoryService.create(createCategoryInput);
+  }
+
+  @Query(() => Category, { nullable: true })
+  @UseGuards(GqlAuthGuard)
+  async findCategoryByName(
+    @Args('name') name: string,
+  ): Promise<Category | null> {
+    try {
+      return await this.categoryService.findCategoryByName(name);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @ResolveField(() => [Post])
