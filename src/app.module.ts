@@ -55,10 +55,8 @@ import { PrismaModule } from './prisma/prisma.module';
 })
 export class AppModule {
   private static formatError(error: GraphQLError): GraphQLFormattedError {
-    // Extracting message and extensions from the original error
     const { message, extensions } = error;
 
-    // Default formatted error structure
     let formattedError: GraphQLFormattedError = {
       message: 'An error occurred',
       extensions: {
@@ -66,11 +64,9 @@ export class AppModule {
       },
     };
 
-    // Handle different types of errors
     if (extensions?.code) {
       switch (extensions.code) {
         case 'BAD_REQUEST':
-          // Defining a type guard for originalError
           const hasMessage = (error: unknown): error is { message: string } => {
             return (
               typeof error === 'object' && error !== null && 'message' in error
@@ -88,7 +84,6 @@ export class AppModule {
           };
           break;
         case 'INTERNAL_SERVER_ERROR':
-          // For internal server errors, avoid exposing stack traces or internal messages
           formattedError = {
             message: 'Internal server error',
             extensions: {
@@ -97,7 +92,6 @@ export class AppModule {
           };
           break;
         case 'GRAPHQL_VALIDATION_FAILED':
-          // For GraphQL validation errors, provide specific field validation issues
           formattedError = {
             message: 'GraphQL validation error',
             extensions: {
@@ -106,7 +100,6 @@ export class AppModule {
             },
           };
           break;
-        // Add other error types as needed
       }
     }
 

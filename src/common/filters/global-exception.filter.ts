@@ -1,4 +1,3 @@
-// path/filename: /src/filters/all-exception.filter.ts
 import {
   Catch,
   ExceptionFilter,
@@ -15,17 +14,14 @@ export class AllExceptionFilter implements ExceptionFilter {
     const type = host.getType<GqlContextType>();
 
     if (type === 'graphql') {
-      // Handle GraphQL errors
       const gqlHost = GqlArgumentsHost.create(host);
       const gqlContext = gqlHost.getContext();
       const graphQLError = this.formatGqlError(exception);
 
-      // Check if response object is available
       if (gqlContext.res) {
         gqlContext.res.status(200).json({ errors: [graphQLError] });
       }
     } else {
-      // Handle HTTP errors (non-GraphQL)
       const ctx = host.switchToHttp();
       const response = ctx.getResponse();
       const request = ctx.getRequest();
@@ -34,7 +30,6 @@ export class AllExceptionFilter implements ExceptionFilter {
           ? exception.getStatus()
           : HttpStatus.INTERNAL_SERVER_ERROR;
 
-      // Check if response object is available
       if (response) {
         response.status(status).json({
           statusCode: status,
