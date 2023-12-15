@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -42,12 +48,12 @@ export class AuthService {
     const user = await this.findUserByEmail(email);
     if (!user) {
       await this.incrementLoginAttempts(accessKey);
-      throw new Error('Login failed. Please try again.');
+      throw new BadRequestException('Login failed. Please try again.');
     }
 
     if (!(await bcrypt.compare(password, user.password))) {
       await this.incrementLoginAttempts(accessKey);
-      throw new Error('Login failed. Please try again.');
+      throw new BadRequestException('Login failed. Please try again.');
     }
 
     await this.resetLoginAttempts(accessKey);

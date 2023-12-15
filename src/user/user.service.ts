@@ -33,46 +33,24 @@ export class UserService {
     field: UserField,
     value: string | number,
   ): Promise<UserWithoutPassword | null> {
-    try {
-      const cachedUser = await this.userCacheService.getCachedUser(
-        field,
-        value,
-      );
-      if (cachedUser) return this.omitPassword(cachedUser);
+    const cachedUser = await this.userCacheService.getCachedUser(field, value);
+    if (cachedUser) return this.omitPassword(cachedUser);
 
-      const whereCondition: Prisma.UserWhereUniqueInput =
-        field === UserField.Email
-          ? { email: value as string }
-          : { id: value as number };
+    const whereCondition: Prisma.UserWhereUniqueInput =
+      field === UserField.Email
+        ? { email: value as string }
+        : { id: value as number };
 
-      const user = await this.prisma.user.findUnique({
-        where: whereCondition,
-        include: { role: true },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: whereCondition,
+      include: { role: true },
+    });
 
-      if (!user)
-        throw new NotFoundException(`User with ${field}: ${value} not found`);
+    if (!user)
+      throw new NotFoundException(`User with ${field}: ${value} not found`);
 
-      await this.userCacheService.setCachedUser(user);
-      return this.omitPassword(user);
-    } catch (error) {
-      this.logger.error(
-        `Error finding user by ${field}: ${error.message}`,
-        error.stack,
-      );
-      switch (error.code) {
-        case 'P2001':
-          throw new NotFoundException(`User with ${field}: ${value} not found`);
-        case 'P2002':
-          throw new BadRequestException(
-            `User with ${field}: ${value} already exists`,
-          );
-        default:
-          throw new InternalServerErrorException(
-            `Failed to find user by ${field}`,
-          );
-      }
-    }
+    await this.userCacheService.setCachedUser(user);
+    return this.omitPassword(user);
   }
 
   private omitPassword(user: User): UserWithoutPassword {
@@ -99,25 +77,13 @@ export class UserService {
       role: roleConnection,
     };
 
-    try {
-      const createdUser = await this.prisma.user.create({
-        data: newUser,
-        include: { role: true },
-      });
+    const createdUser = await this.prisma.user.create({
+      data: newUser,
+      include: { role: true },
+    });
 
-      await this.userCacheService.setCachedUser(createdUser);
-      return this.omitPassword(createdUser);
-    } catch (error) {
-      this.logger.error(`Error creating user: ${error.message}`, error.stack);
-      switch (error.code) {
-        case 'P2002':
-          throw new BadRequestException('Email already exists');
-        case 'P2025':
-          throw new NotFoundException('User to create not found');
-        default:
-          throw new InternalServerErrorException('Failed to create user');
-      }
-    }
+    await this.userCacheService.setCachedUser(createdUser);
+    return this.omitPassword(createdUser);
   }
 
   async findById(id: number): Promise<UserWithoutPassword | null> {
@@ -143,40 +109,20 @@ export class UserService {
       ...(roleConnection && { role: roleConnection }),
     };
 
-    try {
-      const user = await this.prisma.user.update({
-        where: { id },
-        data: updatedUser,
-        include: { role: true },
-      });
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: updatedUser,
+      include: { role: true },
+    });
 
-      if (!user) throw new NotFoundException(`User with ID: ${id} not found`);
+    if (!user) throw new NotFoundException(`User with ID: ${id} not found`);
 
-      await this.userCacheService.setCachedUser(user);
-      return this.omitPassword(user);
-    } catch (error) {
-      this.logger.error(`Error updating user: ${error.message}`, error.stack);
-      switch (error.code) {
-        case 'P2025':
-          throw new NotFoundException(`User with ID: ${id} not found`);
-        default:
-          throw new InternalServerErrorException('Failed to update user');
-      }
-    }
+    await this.userCacheService.setCachedUser(user);
+    return this.omitPassword(user);
   }
 
   async delete(id: number): Promise<UserWithoutPassword> {
-    try {
-      const deletedUser = await this.prisma.user.delete({ where: { id } });
-      return this.omitPassword(deletedUser);
-    } catch (error) {
-      this.logger.error(`Error deleting user: ${error.message}`, error.stack);
-      switch (error.code) {
-        case 'P2025':
-          throw new NotFoundException(`User with ID: ${id} not found`);
-        default:
-          throw new InternalServerErrorException('Failed to delete user');
-      }
-    }
+    const deletedUser = await this.prisma.user.delete({ where: { id } });
+    return this.omitPassword(deletedUser);
   }
 }
