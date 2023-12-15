@@ -1,4 +1,4 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, BadRequestException } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -32,11 +32,15 @@ import { PrismaModule } from './prisma/prisma.module';
             | Error
             | undefined;
 
-          return {
-            message: originalError.message,
-            path: error.path,
-            code: error.extensions?.code,
-          };
+          if (!originalError) {
+            return {
+              message: error.message,
+              error: error.extensions?.code,
+              statusCode: 500,
+            };
+          }
+
+          return originalError;
         },
       }),
     }),
