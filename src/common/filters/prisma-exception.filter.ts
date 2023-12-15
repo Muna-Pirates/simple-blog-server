@@ -19,9 +19,11 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         throw new NotFoundException(exception.meta?.cause || 'Item not found');
       case 'P2002':
         const target = exception.meta?.target;
+
         const targetDescription = Array.isArray(target)
           ? target.join(', ')
           : 'Value';
+
         throw new BadRequestException(`${targetDescription} already exists`);
       case 'P2025':
         throw new NotFoundException('Record to update not found');

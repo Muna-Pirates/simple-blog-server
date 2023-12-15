@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import helmet from 'helmet';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,8 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     app.useGlobalFilters(new PrismaExceptionFilter());
+    // app.useGlobalFilters(new HttpExceptionFilter());
+
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
       origin: function (origin, callback) {
