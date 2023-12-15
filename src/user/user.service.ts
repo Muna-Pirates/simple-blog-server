@@ -60,7 +60,18 @@ export class UserService {
         `Error finding user by ${field}: ${error.message}`,
         error.stack,
       );
-      throw new InternalServerErrorException(`Failed to find user by ${field}`);
+      switch (error.code) {
+        case 'P2001':
+          throw new NotFoundException(`User with ${field}: ${value} not found`);
+        case 'P2002':
+          throw new BadRequestException(
+            `User with ${field}: ${value} already exists`,
+          );
+        default:
+          throw new InternalServerErrorException(
+            `Failed to find user by ${field}`,
+          );
+      }
     }
   }
 
@@ -101,11 +112,11 @@ export class UserService {
       switch (error.code) {
         case 'P2002':
           throw new BadRequestException('Email already exists');
+        case 'P2025':
+          throw new NotFoundException('User to create not found');
         default:
-          break;
+          throw new InternalServerErrorException('Failed to create user');
       }
-
-      throw new InternalServerErrorException('Failed to create user');
     }
   }
 
@@ -145,7 +156,12 @@ export class UserService {
       return this.omitPassword(user);
     } catch (error) {
       this.logger.error(`Error updating user: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Failed to update user');
+      switch (error.code) {
+        case 'P2025':
+          throw new NotFoundException(`User with ID: ${id} not found`);
+        default:
+          throw new InternalServerErrorException('Failed to update user');
+      }
     }
   }
 
@@ -155,7 +171,12 @@ export class UserService {
       return this.omitPassword(deletedUser);
     } catch (error) {
       this.logger.error(`Error deleting user: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Failed to delete user');
+      switch (error.code) {
+        case 'P2025':
+          throw new NotFoundException(`User with ID: ${id} not found`);
+        default:
+          throw new InternalServerErrorException('Failed to delete user');
+      }
     }
   }
 }

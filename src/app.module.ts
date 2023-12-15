@@ -66,6 +66,15 @@ export class AppModule {
 
     if (extensions?.code) {
       switch (extensions.code) {
+        case 'UNAUTHENTICATED':
+          formattedError = {
+            message: 'Unauthorized access',
+            extensions: {
+              code: 'UNAUTHENTICATED',
+              details: 'Access is denied due to invalid credentials',
+            },
+          };
+          break;
         case 'BAD_REQUEST':
           const hasMessage = (error: unknown): error is { message: string } => {
             return (

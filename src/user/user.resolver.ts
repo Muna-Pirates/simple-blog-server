@@ -88,7 +88,7 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  @UseGuards(GqlAuthGuard, GqlRolesGuard)
+  @UseGuards(GqlAuthGuard)
   async deleteUser(
     @CurrentUser() currentUser: User,
     @Args('id', { type: () => Int }) id: number,
