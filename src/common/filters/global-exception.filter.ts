@@ -1,47 +1,58 @@
+// path/filename: /src/filters/all-exception.filter.ts
 import {
-  ExceptionFilter,
   Catch,
+  ExceptionFilter,
   ArgumentsHost,
   HttpException,
-  Logger,
+  HttpStatus,
 } from '@nestjs/common';
-import { GqlArgumentsHost, GqlExceptionFilter } from '@nestjs/graphql';
-import { Request, Response } from 'express';
+import { GqlArgumentsHost, GqlContextType } from '@nestjs/graphql';
+import { GraphQLError } from 'graphql';
 
-@Catch(HttpException)
-export class HttpExceptionFilter
-  implements ExceptionFilter, GqlExceptionFilter
-{
-  private readonly logger = new Logger(HttpExceptionFilter.name);
+@Catch()
+export class AllExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const type = host.getType<GqlContextType>();
 
-  catch(exception: HttpException, host: ArgumentsHost) {
-    const gqlHost = GqlArgumentsHost.create(host);
-    const context = gqlHost.getContext();
-    const response: Response = context.res;
-    const request: Request = context.req;
+    if (type === 'graphql') {
+      // Handle GraphQL errors
+      const gqlHost = GqlArgumentsHost.create(host);
+      const gqlContext = gqlHost.getContext();
+      const graphQLError = this.formatGqlError(exception);
 
-    const { status, message } = exception.getResponse() as {
-      status: number;
-      message: string[] | string;
-    };
+      // Check if response object is available
+      if (gqlContext.res) {
+        gqlContext.res.status(200).json({ errors: [graphQLError] });
+      }
+    } else {
+      // Handle HTTP errors (non-GraphQL)
+      const ctx = host.switchToHttp();
+      const response = ctx.getResponse();
+      const request = ctx.getRequest();
+      const status =
+        exception instanceof HttpException
+          ? exception.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const errorResponse = {
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request?.url,
-      message: Array.isArray(message) ? message : [message],
-    };
-
-    this.logger.error({
-      message: 'Exception caught',
-      exception: errorResponse,
-      context: request ? 'REST' : 'GraphQL',
-    });
-
-    if (!response) {
-      throw new HttpException(errorResponse, status);
+      // Check if response object is available
+      if (response) {
+        response.status(status).json({
+          statusCode: status,
+          timestamp: new Date().toISOString(),
+          path: request.url,
+          message: this.getErrorMessage(exception),
+        });
+      }
     }
+  }
 
-    response.status(status).json(errorResponse);
+  private formatGqlError(exception: unknown): GraphQLError {
+    return exception instanceof GraphQLError
+      ? exception
+      : new GraphQLError('An unknown error occurred');
+  }
+
+  private getErrorMessage(exception: unknown): string {
+    return exception instanceof Error ? exception.message : 'Unknown error';
   }
 }

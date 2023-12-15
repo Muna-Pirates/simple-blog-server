@@ -3,7 +3,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
-import { GraphQLError } from 'graphql';
+import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -28,12 +28,7 @@ import { PrismaModule } from './prisma/prisma.module';
       useFactory: (configService: ConfigService) => ({
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         subscriptions: { 'graphql-ws': true },
-        formatError: (error: GraphQLError) => {
-          const loggerService = new LoggerService();
-          return new EnhancedErrorFormatter(loggerService).formatGraphQLError(
-            error,
-          );
-        },
+        formatError: AppModule.formatError,
       }),
       inject: [ConfigService],
     }),
@@ -58,4 +53,63 @@ import { PrismaModule } from './prisma/prisma.module';
   providers: [AppService, LoggerService, CacheService],
   exports: [LoggerService, CacheService],
 })
-export class AppModule {}
+export class AppModule {
+  private static formatError(error: GraphQLError): GraphQLFormattedError {
+    // Extracting message and extensions from the original error
+    const { message, extensions } = error;
+
+    // Default formatted error structure
+    let formattedError: GraphQLFormattedError = {
+      message: 'An error occurred',
+      extensions: {
+        code: 'INTERNAL_ERROR',
+      },
+    };
+
+    // Handle different types of errors
+    if (extensions?.code) {
+      switch (extensions.code) {
+        case 'BAD_REQUEST':
+          // Defining a type guard for originalError
+          const hasMessage = (error: unknown): error is { message: string } => {
+            return (
+              typeof error === 'object' && error !== null && 'message' in error
+            );
+          };
+
+          formattedError = {
+            message: 'Invalid input data provided',
+            extensions: {
+              code: 'BAD_REQUEST',
+              details: hasMessage(extensions.originalError)
+                ? extensions.originalError.message
+                : [],
+            },
+          };
+          break;
+        case 'INTERNAL_SERVER_ERROR':
+          // For internal server errors, avoid exposing stack traces or internal messages
+          formattedError = {
+            message: 'Internal server error',
+            extensions: {
+              code: 'INTERNAL_SERVER_ERROR',
+            },
+          };
+          break;
+        case 'GRAPHQL_VALIDATION_FAILED':
+          // For GraphQL validation errors, provide specific field validation issues
+          formattedError = {
+            message: 'GraphQL validation error',
+            extensions: {
+              code: 'GRAPHQL_VALIDATION_FAILED',
+              details: message,
+            },
+          };
+          break;
+        // Add other error types as needed
+      }
+    }
+
+    return formattedError;
+  }
+}

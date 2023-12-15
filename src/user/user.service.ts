@@ -98,6 +98,13 @@ export class UserService {
       return this.omitPassword(createdUser);
     } catch (error) {
       this.logger.error(`Error creating user: ${error.message}`, error.stack);
+      switch (error.code) {
+        case 'P2002':
+          throw new BadRequestException('Email already exists');
+        default:
+          break;
+      }
+
       throw new InternalServerErrorException('Failed to create user');
     }
   }
