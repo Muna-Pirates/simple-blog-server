@@ -135,8 +135,6 @@ export class PostService {
       include: { author: true, comments: true, category: true },
     });
 
-    console.log(deletedPost);
-
     await this.cacheService.del(`post_${postId}`);
     await this.cacheService.del('posts_page_*');
     return deletedPost;

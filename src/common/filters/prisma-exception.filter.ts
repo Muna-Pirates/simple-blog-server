@@ -14,6 +14,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
 
+    console.log(exception);
+
     switch (exception.code) {
       case 'P2001':
         throw new NotFoundException(exception.meta?.cause || 'Item not found');
