@@ -130,6 +130,9 @@ export class PostService {
     const post = await this.findOneById(postId);
     await this.checkAuthorization(post, user.id, user.roleId);
 
+    // First, delete any related records that might cause foreign key constraint failures
+    await this.deleteRelatedRecords(postId);
+
     const deletedPost = await this.prisma.post.delete({
       where: { id: postId },
       include: { author: true, comments: true, category: true },
@@ -138,6 +141,12 @@ export class PostService {
     await this.cacheService.del(`post_${postId}`);
     await this.cacheService.del('posts_page_*');
     return deletedPost;
+  }
+
+  private async deleteRelatedRecords(postId: number): Promise<void> {
+    await this.prisma.comment.deleteMany({
+      where: { postId },
+    });
   }
 
   async searchPosts(criteria: PostSearchInput, pagination: PaginationInput) {
