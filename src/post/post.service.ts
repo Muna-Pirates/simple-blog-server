@@ -130,6 +130,8 @@ export class PostService {
     const post = await this.findOneById(postId);
     await this.checkAuthorization(post, user.id, user.roleId);
 
+    console.log(post, '@@@');
+
     const deletedPost = await this.prisma.post.delete({
       where: { id: postId },
       include: { author: true, comments: true, category: true },

@@ -90,6 +90,8 @@ export class PostResolver {
   ) {
     const user = await this.userService.findById(currentUser.id);
 
+    console.log(user, '@@');
+
     return this.postService.deletePost(postId, {
       id: user.id,
       roleId: user.roleId,
